@@ -22,6 +22,7 @@ const String kGoogleOAuthClientId =
 
 /// Must exactly match the `appAuthRedirectScheme` manifest placeholder set in
 /// android/app/build.gradle.kts, and the applicationId if that ever changes.
-const String kOAuthRedirectScheme = 'com.example.tube_flow';
+const String kOAuthRedirectScheme =
+    'com.googleusercontent.apps.45915931754-oggc6tn5ip85teautmh0g7v00s7frbds';
 
 const String kOAuthRedirectUri = '$kOAuthRedirectScheme:/oauth2redirect';

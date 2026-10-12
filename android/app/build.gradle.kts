@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.tube_flow"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -35,7 +35,8 @@ android {
         // Must match kOAuthRedirectScheme in lib/core/config/env.dart, and be
         // updated in lockstep (plus a new Android OAuth client registration
         // in Google Cloud Console) if applicationId ever changes.
-        manifestPlaceholders["appAuthRedirectScheme"] = "com.example.tube_flow"
+        manifestPlaceholders["appAuthRedirectScheme"] =
+            "com.googleusercontent.apps.45915931754-oggc6tn5ip85teautmh0g7v00s7frbds"
     }
 
     buildTypes {
