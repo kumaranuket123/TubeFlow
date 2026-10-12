@@ -53,9 +53,15 @@ class YoutubeAuthRepositoryImpl implements YoutubeAuthRepository {
   }
 
   Future<void> _restoreFromCache() async {
-    final row = await (_database.select(_database.youtubeAccounts)
-          ..limit(1))
-        .getSingleOrNull();
+    final YoutubeAccount? row;
+    try {
+      row = await (_database.select(_database.youtubeAccounts)..limit(1))
+          .getSingleOrNull();
+    } catch (_) {
+      // Never leave the UI on an endless spinner if local storage fails.
+      _emit(const AuthError('Could not read local data. Please restart the app.'));
+      return;
+    }
     if (row != null) {
       _emit(AuthConnected(YoutubeChannel(
         channelId: row.channelId,

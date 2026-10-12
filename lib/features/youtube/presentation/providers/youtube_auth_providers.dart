@@ -5,7 +5,13 @@ import '../../../../core/error/exceptions.dart';
 import '../../data/datasources/youtube_api_remote_datasource.dart';
 import '../../data/datasources/youtube_auth_appauth_datasource.dart';
 import '../../data/repositories/youtube_auth_repository_impl.dart';
+import '../../data/datasources/youtube_playlist_remote_datasource.dart';
+import '../../data/services/youtube_playlist_service_impl.dart';
 import '../../domain/entities/auth_state.dart';
+import '../../domain/entities/youtube_playlist.dart';
+import '../../domain/playlist_provisioner.dart';
+import '../../domain/services/youtube_playlist_service.dart';
+import '../../../settings/presentation/providers/settings_providers.dart';
 import '../../domain/repositories/youtube_auth_repository.dart';
 import '../../domain/usecases/connect_account.dart';
 import '../../domain/usecases/disconnect_account.dart';
@@ -86,3 +92,25 @@ class YoutubeAuthController extends Notifier<AuthState> {
 
   Future<void> disconnect() => ref.read(disconnectAccountProvider).call();
 }
+
+final youtubePlaylistServiceProvider = Provider<YoutubePlaylistService>((ref) {
+  return YoutubePlaylistServiceImpl(
+    ref.watch(youtubeAuthRepositoryProvider),
+    YoutubePlaylistRemoteDataSource(ref.watch(dioProvider)),
+  );
+});
+
+final playlistProvisionerProvider = Provider<PlaylistProvisioner>((ref) {
+  return PlaylistProvisioner(
+    playlists: ref.watch(youtubePlaylistServiceProvider),
+    settings: ref.watch(settingsRepositoryProvider),
+  );
+});
+
+/// The channel's playlists. A channel with none gets a private default one
+/// created (and selected) automatically.
+final playlistsProvider = FutureProvider.autoDispose<List<YoutubePlaylist>>((ref) async {
+  final list = await ref.watch(youtubePlaylistServiceProvider).getMyPlaylists();
+  if (list.isNotEmpty) return list;
+  return [await ref.read(playlistProvisionerProvider).createDefault()];
+});

@@ -19,3 +19,14 @@ class YoutubeApiException implements Exception {
   @override
   String toString() => 'YoutubeApiException($statusCode): $message';
 }
+
+/// A recoverable failure (network loss, 5xx) after in-request retries were
+/// exhausted. The upload keeps its session and is retried later.
+class TransientUploadException implements Exception {
+  const TransientUploadException([this.message = 'Upload interrupted. Retrying...']);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
