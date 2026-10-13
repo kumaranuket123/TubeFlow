@@ -63,10 +63,12 @@ class YoutubePlaylistRemoteDataSource {
     }
   }
 
-  /// `playlists.insert` (50 quota units). Always created PRIVATE.
-  Future<YoutubePlaylist> createPrivatePlaylist({
+  /// `playlists.insert` (50 quota units). [privacyStatus] is `private`,
+  /// `unlisted` or `public`; defaults to private.
+  Future<YoutubePlaylist> createPlaylist({
     required String accessToken,
     required String title,
+    String privacyStatus = 'private',
     String description = '',
   }) async {
     try {
@@ -75,7 +77,7 @@ class YoutubePlaylistRemoteDataSource {
         queryParameters: {'part': 'snippet,status,contentDetails'},
         data: {
           'snippet': {'title': title, 'description': description},
-          'status': {'privacyStatus': 'private'},
+          'status': {'privacyStatus': privacyStatus},
         },
         options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );

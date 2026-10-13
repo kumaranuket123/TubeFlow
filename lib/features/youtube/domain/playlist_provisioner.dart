@@ -24,7 +24,7 @@ class PlaylistProvisioner {
   Future<YoutubePlaylist> createDefault() {
     return _creating ??= () async {
       try {
-        final created = await _playlists.createPrivatePlaylist(defaultTitle);
+        final created = await _playlists.createPlaylist(defaultTitle);
         await _settings.setPlaylist(created.id, created.title);
         return created;
       } finally {

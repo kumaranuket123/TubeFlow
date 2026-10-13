@@ -22,6 +22,11 @@ class PlaylistPickerScreen extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _createPlaylist(context, ref),
+        icon: const Icon(Icons.add),
+        label: const Text('New playlist'),
+      ),
       body: playlists.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -68,6 +73,89 @@ class PlaylistPickerScreen extends ConsumerWidget {
                 ),
               ),
       ),
+    );
+  }
+
+  Future<void> _createPlaylist(BuildContext context, WidgetRef ref) async {
+    final result = await showDialog<({String title, String privacy})>(
+      context: context,
+      builder: (_) => const _NewPlaylistDialog(),
+    );
+    if (result == null || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      final created = await ref
+          .read(youtubePlaylistServiceProvider)
+          .createPlaylist(result.title, privacyStatus: result.privacy);
+      await ref.read(settingsRepositoryProvider).setPlaylist(created.id, created.title);
+      ref.invalidate(playlistsProvider);
+      navigator.pop();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not create playlist: $e')));
+    }
+  }
+}
+
+class _NewPlaylistDialog extends StatefulWidget {
+  const _NewPlaylistDialog();
+
+  @override
+  State<_NewPlaylistDialog> createState() => _NewPlaylistDialogState();
+}
+
+class _NewPlaylistDialogState extends State<_NewPlaylistDialog> {
+  final _controller = TextEditingController();
+  String _privacy = 'private';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final title = _controller.text.trim();
+    if (title.isNotEmpty) Navigator.of(context).pop((title: title, privacy: _privacy));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New playlist'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            maxLength: 150,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(labelText: 'Playlist name'),
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _privacy,
+            decoration: const InputDecoration(labelText: 'Visibility'),
+            items: const [
+              DropdownMenuItem(value: 'private', child: Text('Private')),
+              DropdownMenuItem(value: 'unlisted', child: Text('Unlisted')),
+              DropdownMenuItem(value: 'public', child: Text('Public')),
+            ],
+            onChanged: (v) => setState(() => _privacy = v ?? 'private'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Create')),
+      ],
     );
   }
 }

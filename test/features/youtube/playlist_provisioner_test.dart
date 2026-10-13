@@ -23,7 +23,7 @@ class _FakePlaylists implements YoutubePlaylistService {
   Future<List<YoutubePlaylist>> getMyPlaylists() async => existing;
 
   @override
-  Future<YoutubePlaylist> createPrivatePlaylist(String title) async {
+  Future<YoutubePlaylist> createPlaylist(String title, {String privacyStatus = 'private'}) async {
     created.add(title);
     await Future<void>.delayed(const Duration(milliseconds: 5));
     final p = YoutubePlaylist(id: 'NEW${created.length}', title: title, privacyStatus: 'private');

@@ -16,8 +16,15 @@ class YoutubePlaylistServiceImpl implements YoutubePlaylistService {
   }
 
   @override
-  Future<YoutubePlaylist> createPrivatePlaylist(String title) async {
+  Future<YoutubePlaylist> createPlaylist(
+    String title, {
+    String privacyStatus = 'private',
+  }) async {
     final token = await _auth.getValidAccessToken();
-    return _remote.createPrivatePlaylist(accessToken: token, title: title);
+    return _remote.createPlaylist(
+      accessToken: token,
+      title: title,
+      privacyStatus: privacyStatus,
+    );
   }
 }

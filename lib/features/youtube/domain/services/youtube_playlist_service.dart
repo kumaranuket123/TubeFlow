@@ -3,5 +3,6 @@ import '../entities/youtube_playlist.dart';
 abstract class YoutubePlaylistService {
   Future<List<YoutubePlaylist>> getMyPlaylists();
 
-  Future<YoutubePlaylist> createPrivatePlaylist(String title);
+  /// [privacyStatus]: `private` (default), `unlisted` or `public`.
+  Future<YoutubePlaylist> createPlaylist(String title, {String privacyStatus = 'private'});
 }
