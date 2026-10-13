@@ -12,6 +12,9 @@
         android:maxSdkVersion="32"/>
 
     <application
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:label="tube_flow"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

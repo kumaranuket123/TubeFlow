@@ -64,10 +64,24 @@ android {
             // Uses the release keystore when key.properties exists; otherwise
             // falls back to debug signing so local `--release` runs still work.
             // Never publish a debug-signed build.
-            signingConfig = if (keystoreProperties.containsKey("storeFile"))
+            signingConfig = if (keystoreProperties.containsKey("storeFile")) {
                 signingConfigs.getByName("release")
-            else
+            } else {
+                // Debug-signed release builds are only allowed for local runs.
+                // Pass -PallowDebugSigning=true for a local test build; anything
+                // else fails so a debug-signed build can't be shipped.
+                if (!project.hasProperty("allowDebugSigning")) {
+                    gradle.taskGraph.whenReady {
+                        if (allTasks.any { it.name.contains("Release") && (it.name.startsWith("assemble") || it.name.startsWith("bundle")) }) {
+                            throw GradleException(
+                                "android/key.properties is missing: refusing to build a debug-signed release. " +
+                                    "See docs/RELEASE.md, or pass -PallowDebugSigning=true for a local test build."
+                            )
+                        }
+                    }
+                }
                 signingConfigs.getByName("debug")
+            }
         }
     }
 }

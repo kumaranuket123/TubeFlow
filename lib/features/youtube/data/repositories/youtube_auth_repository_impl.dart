@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
 
 import '../../../../core/constants/youtube_api_constants.dart';
 import '../../../../core/database/app_database.dart';
@@ -92,8 +93,19 @@ class YoutubeAuthRepositoryImpl implements YoutubeAuthRepository {
       await _tokenStorage.clear();
       _emit(const AuthNoChannel());
     } catch (e) {
-      _emit(AuthError('Could not connect YouTube account: $e'));
+      _emit(AuthError(_connectErrorMessage(e)));
     }
+  }
+
+  /// User-facing text only; raw exception details are never shown.
+  String _connectErrorMessage(Object e) {
+    if (e is FlutterAppAuthUserCancelledException) {
+      return 'Sign-in was cancelled. Please try again.';
+    }
+    if (e is YoutubeApiException && e.statusCode != null) {
+      return 'YouTube could not be reached (error ${e.statusCode}). Please try again.';
+    }
+    return 'Could not connect your YouTube account. Check your connection and try again.';
   }
 
   Future<void> _cacheChannel(YoutubeChannel channel) async {

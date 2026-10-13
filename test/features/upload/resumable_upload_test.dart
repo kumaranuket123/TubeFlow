@@ -57,7 +57,7 @@ ResponseBody _res(int status,
 }
 
 ResponseBody _created(String id) => _res(200, json: {'id': id});
-ResponseBody _session([String uri = 'https://upload.example/s1']) =>
+ResponseBody _session([String uri = 'https://www.googleapis.com/upload/s1']) =>
     _res(200, headers: {'location': [uri]});
 ResponseBody _more(int lastByte) => _res(308, headers: {
       'range': ['bytes=0-$lastByte']
@@ -97,7 +97,7 @@ void main() {
       onProgress: progress.add,
     );
     expect(id, 'vid1');
-    expect(sessions, ['https://upload.example/s1']);
+    expect(sessions, ['https://www.googleapis.com/upload/s1']);
     expect(a.requests.skip(1).map((r) => r.range),
         ['bytes 0-3/10', 'bytes 4-7/10', 'bytes 8-9/10']);
     expect(a.requests.skip(1).map((r) => r.bodyLength), [4, 4, 2]);
@@ -116,7 +116,7 @@ void main() {
       accessToken: 't',
       file: file,
       title: 'x',
-      sessionUri: 'https://upload.example/old',
+      sessionUri: 'https://www.googleapis.com/upload/old',
       onSessionStarted: (_) async => fail('must not start a new session'),
       onProgress: (_) {},
     );
@@ -124,7 +124,7 @@ void main() {
     expect(a.requests[0].range, 'bytes */10');
     expect(a.requests[1].range, 'bytes 5-8/10');
     expect(a.requests[2].range, 'bytes 9-9/10');
-    expect(a.requests.every((r) => r.url.startsWith('https://upload.example/old')),
+    expect(a.requests.every((r) => r.url.startsWith('https://www.googleapis.com/upload/old')),
         isTrue);
   });
 
@@ -132,7 +132,7 @@ void main() {
     final a = _FakeAdapter((r, i) => _created('done'));
     final id = await ds(a).uploadVideo(
       accessToken: 't', file: file, title: 'x',
-      sessionUri: 'https://upload.example/old',
+      sessionUri: 'https://www.googleapis.com/upload/old',
       onSessionStarted: (_) async {}, onProgress: (_) {},
     );
     expect(id, 'done');
@@ -142,7 +142,7 @@ void main() {
   test('expired session (404) starts a new one from byte 0', () async {
     final a = _FakeAdapter((r, i) => switch (i) {
           0 => _res(404),
-          1 => _session('https://upload.example/new'),
+          1 => _session('https://www.googleapis.com/upload/new'),
           2 => _more(3),
           3 => _more(7),
           _ => _created('vid3'),
@@ -150,12 +150,12 @@ void main() {
     final sessions = <String>[];
     final id = await ds(a).uploadVideo(
       accessToken: 't', file: file, title: 'x',
-      sessionUri: 'https://upload.example/old',
+      sessionUri: 'https://www.googleapis.com/upload/old',
       onSessionStarted: (s) async => sessions.add(s),
       onProgress: (_) {},
     );
     expect(id, 'vid3');
-    expect(sessions, ['https://upload.example/new']);
+    expect(sessions, ['https://www.googleapis.com/upload/new']);
     expect(a.requests[2].range, 'bytes 0-3/10');
   });
 

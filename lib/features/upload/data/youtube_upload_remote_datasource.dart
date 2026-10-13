@@ -49,7 +49,8 @@ class YoutubeUploadRemoteDataSource {
     final total = await file.length();
     if (total == 0) throw const YoutubeApiException('The video file is empty.');
 
-    var session = sessionUri;
+    var session =
+        sessionUri != null && _isTrustedUploadUrl(sessionUri) ? sessionUri : null;
     var offset = 0;
     var needResync = session != null;
     var failures = 0;
@@ -160,7 +161,7 @@ class YoutubeUploadRemoteDataSource {
         }),
       );
       final location = init.headers.value('location');
-      if (location == null) {
+      if (location == null || !_isTrustedUploadUrl(location)) {
         throw const YoutubeApiException('YouTube did not return an upload URL');
       }
       return location;
@@ -246,4 +247,13 @@ class _Resume extends _Status {
 
 class _Expired extends _Status {
   const _Expired();
+}
+
+/// The resumable session URL carries our bearer token on later requests, so
+/// only accept HTTPS URLs on Google's own API hosts.
+bool _isTrustedUploadUrl(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null || uri.scheme != 'https') return false;
+  final host = uri.host.toLowerCase();
+  return host == 'googleapis.com' || host.endsWith('.googleapis.com');
 }

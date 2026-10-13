@@ -49,3 +49,7 @@ check the SHA-1 matches the OAuth client.
 
 ## Release checklist (device)
 See `docs/INTEGRATION_TESTING.md` → *Manual release checklist*.
+
+## Signing guard
+
+`assembleRelease` / `bundleRelease` fail when `android/key.properties` is missing, so a debug-signed build can't be shipped by accident. For a local test build only: `flutter build apk --release --android-project-arg=allowDebugSigning=true`.

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../media/domain/media_video.dart';
+import '../../../media/presentation/providers/media_providers.dart';
 import '../../domain/entities/video_upload_item.dart';
 import '../providers/upload_providers.dart';
 
@@ -12,19 +14,38 @@ Future<int> pickAndEnqueueVideos(WidgetRef ref) async {
   final files = await FilePicker.pickFiles(type: FileType.video);
   final manager = ref.read(uploadManagerProvider);
   var duplicates = 0;
+  final library = await _mediaLibrary(ref);
   for (final f in files) {
     final path = f.path;
     if (path == null) continue;
     final file = File(path);
+    final size = await file.length();
+    // The picker may hand back a cache copy. Link it to the real MediaStore
+    // row (same name + size) so the original can be offered for deletion and
+    // the scanner never uploads it a second time.
+    final match = library
+        .where((v) => v.name == f.name && v.size == size)
+        .firstOrNull;
     final item = await manager.enqueue(NewVideo(
-      contentUri: file.uri.toString(),
+      mediaStoreId: match?.id,
+      contentUri: match?.uri ?? file.uri.toString(),
       localPath: path,
       fileName: f.name,
-      fileSize: await file.length(),
+      fileSize: size,
       dateTaken: file.lastModifiedSync(),
     ));
     if (item == null) duplicates++;
   }
   await ref.read(uploadTriggerProvider)();
   return duplicates;
+}
+
+/// All MediaStore videos, or empty if the permission is missing or the query
+/// fails (the upload itself does not need it).
+Future<List<MediaVideo>> _mediaLibrary(WidgetRef ref) async {
+  try {
+    return await ref.read(mediaStoreServiceProvider).queryVideos();
+  } catch (_) {
+    return const [];
+  }
 }

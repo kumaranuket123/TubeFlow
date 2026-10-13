@@ -25,6 +25,7 @@ class ForegroundUploadService {
         channelId: 'tubeflow_uploads',
         channelName: 'Video uploads',
         channelDescription: 'Shows progress while TubeFlow uploads videos.',
+        visibility: NotificationVisibility.VISIBILITY_PRIVATE,
       ),
       iosNotificationOptions: const IOSNotificationOptions(),
       foregroundTaskOptions: ForegroundTaskOptions(
