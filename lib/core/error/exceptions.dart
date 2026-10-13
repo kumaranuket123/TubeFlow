@@ -30,3 +30,11 @@ class TransientUploadException implements Exception {
   @override
   String toString() => message;
 }
+
+/// Thrown when the signed-in Google account has no YouTube channel yet.
+class NoYoutubeChannelException implements Exception {
+  const NoYoutubeChannelException();
+
+  @override
+  String toString() => 'No YouTube channel found for this Google account';
+}

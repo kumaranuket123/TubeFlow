@@ -30,3 +30,8 @@ class AuthError extends AuthState {
 
   final String message;
 }
+
+/// Sign-in worked, but the Google account has no YouTube channel yet.
+class AuthNoChannel extends AuthState {
+  const AuthNoChannel();
+}

@@ -1,3 +1,5 @@
+import '../../../../core/error/exceptions.dart';
+
 /// Display-only metadata for the connected YouTube channel.
 class YoutubeChannel {
   const YoutubeChannel({
@@ -13,7 +15,7 @@ class YoutubeChannel {
   factory YoutubeChannel.fromJson(Map<String, dynamic> json) {
     final items = json['items'] as List<dynamic>?;
     if (items == null || items.isEmpty) {
-      throw const FormatException('No channel found for the authenticated user');
+      throw const NoYoutubeChannelException();
     }
     final item = items.first as Map<String, dynamic>;
     final snippet = item['snippet'] as Map<String, dynamic>;

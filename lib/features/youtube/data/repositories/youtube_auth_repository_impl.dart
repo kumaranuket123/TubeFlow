@@ -88,6 +88,9 @@ class YoutubeAuthRepositoryImpl implements YoutubeAuthRepository {
       await _cacheChannel(channel);
 
       _emit(AuthConnected(channel));
+    } on NoYoutubeChannelException {
+      await _tokenStorage.clear();
+      _emit(const AuthNoChannel());
     } catch (e) {
       _emit(AuthError('Could not connect YouTube account: $e'));
     }
