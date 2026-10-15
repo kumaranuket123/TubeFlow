@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/widgets/app_logo.dart';
 import '../../domain/entities/auth_state.dart';
 import '../../domain/entities/youtube_channel.dart';
 import '../providers/youtube_auth_providers.dart';
@@ -14,7 +15,7 @@ class YoutubeConnectScreen extends ConsumerWidget {
     final authState = ref.watch(youtubeAuthControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('TubeFlow')),
+      appBar: AppBar(title: const AppBarTitle()),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -45,7 +46,7 @@ class _DisconnectedView extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.smart_display_outlined, size: 64),
+        const AppLogo(size: 96),
         const SizedBox(height: 16),
         const Text(
           'Connect your YouTube account to let TubeFlow upload your videos automatically.',

@@ -25,7 +25,7 @@ TubeFlow talks to YouTube directly from the phone using OAuth 2.0 with an
 
 ## 3. Android OAuth client
 **Credentials → Create credentials → OAuth client ID → Application type: Android**
-- **Package name**: the app's `applicationId` (currently `com.example.tube_flow`).
+- **Package name**: the app's `applicationId` (`com.crn.tubeflow`).
 - **SHA-1**: certificate fingerprint of the key that signs the build.
   - Debug: `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`
   - Release: the same command against your release keystore (see `docs/RELEASE.md`).

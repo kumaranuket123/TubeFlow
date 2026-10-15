@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TubeFlow Privacy Policy</title>
+<style>
+  body { font: 16px/1.6 system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #0f0f0f; }
+  h1, h2 { line-height: 1.25; }
+  h2 { margin-top: 2rem; }
+  code { background: #f2f2f2; padding: 0 .25em; border-radius: 4px; }
+  @media (prefers-color-scheme: dark) { body { background: #0f0f0f; color: #f1f1f1; } code { background: #272727; } a { color: #8ab4f8; } }
+</style>
+</head>
+<body>
+<h1>TubeFlow Privacy Policy</h1>
+<p><strong>Last updated:</strong> [DATE]</p>
+
+<p>TubeFlow ("the app") is an Android app that finds videos recorded with your
+camera and uploads them to your own YouTube channel as private videos. This
+policy explains what data the app accesses and how it is handled.</p>
+
+<h2>Summary</h2>
+<ul>
+  <li>TubeFlow has <strong>no server</strong>. The developer does not receive, store or see your data.</li>
+  <li>Your videos go <strong>only to your own YouTube channel</strong>, through Google's official YouTube Data API.</li>
+  <li>The app has no ads, no analytics and no third-party trackers.</li>
+</ul>
+
+<h2>Data the app accesses</h2>
+<ul>
+  <li><strong>Google account sign-in.</strong> You sign in with Google. The app receives OAuth access and refresh tokens, and your YouTube channel name, ID and profile picture to show which account is connected.</li>
+  <li><strong>YouTube data.</strong> Using the <code>https://www.googleapis.com/auth/youtube</code> scope, the app uploads videos you choose or that it detects, lists your playlists, creates playlists you ask it to create, adds uploaded videos to the playlist you select, and checks that an uploaded video is private.</li>
+  <li><strong>Videos on your device.</strong> With the video permission you grant, the app reads video files in your device's media library (name, size, date and the file itself) to detect new recordings and upload them. It does not access photos, audio or other files.</li>
+  <li><strong>Network and battery state.</strong> Used only to apply your rules (for example, "Wi-Fi only" and "while charging").</li>
+  <li><strong>Notifications.</strong> Used to show upload progress.</li>
+</ul>
+
+<h2>How data is stored</h2>
+<ul>
+  <li>Sign-in tokens are stored on your device in Android's encrypted, Keystore-backed storage.</li>
+  <li>The upload queue, settings and channel name are stored in a local database on your device. App data is excluded from Android cloud backup.</li>
+  <li>Nothing is sent to the developer or any third party other than Google/YouTube.</li>
+</ul>
+
+<h2>Deleting your original videos</h2>
+<p>If you turn off "Keep original video", the app can offer to delete a video from your
+device after it has uploaded successfully. Android always shows its own confirmation
+and nothing is deleted without your approval.</p>
+
+<h2>Sharing</h2>
+<p>The app does not sell, share or transfer your data. Videos and playlist actions
+are sent to YouTube on your behalf and are then subject to
+<a href="https://policies.google.com/privacy">Google's Privacy Policy</a> and the
+<a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>.</p>
+
+<h2>Google API Services User Data Policy</h2>
+<p>TubeFlow's use and transfer to any other app of information received from Google
+APIs will adhere to the
+<a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
+including the Limited Use requirements. Data from your Google account is used only to
+provide the upload features described above, and is not used for advertising or sold.
+No humans read your data.</p>
+
+<h2>Disconnecting and deleting your data</h2>
+<ul>
+  <li><strong>In the app:</strong> open the YouTube screen and tap <em>Disconnect</em>. This revokes access and deletes the stored tokens and channel details from your device.</li>
+  <li><strong>From Google:</strong> you can remove TubeFlow's access any time at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</li>
+  <li>Uninstalling the app deletes all of its local data. Videos already uploaded stay on your YouTube channel until you delete them there.</li>
+</ul>
+
+<h2>Children</h2>
+<p>The app is not directed at children under 13.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes, the updated version will be posted at this address with a new date.</p>
+
+<h2>Contact</h2>
+<p>Questions: [CONTACT EMAIL]</p>
+</body>
+</html>

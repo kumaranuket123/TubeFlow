@@ -46,3 +46,27 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Secrets / signing (never commit)
+*.p12
+*.pem
+*.pfx
+.env
+.env.*
+**/google-services.json
+**/service-account*.json
+**/*-service-account.json
+**/play-store*.json
+
+# Release artifacts
+*.aab
+*.apk
+*.ipa
+*.jks
+*.keystore
+key.properties
+
+# Local tooling
+.claude/settings.local.json
+.vscode/launch.json
+*.tmp

@@ -3,7 +3,7 @@
 //
 // Get it from: Google Cloud Console > APIs & Services > Credentials
 //   1. Create OAuth client ID > Application type = Android
-//   2. Package name = com.example.tube_flow (must match applicationId in
+//   2. Package name = com.crn.tubeflow (must match applicationId in
 //      android/app/build.gradle.kts)
 //   3. SHA-1 signing certificate fingerprint, e.g. for the debug keystore:
 //      keytool -list -v -keystore ~/.android/debug.keystore \

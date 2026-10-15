@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/network_service.dart';
+import '../../../../core/widgets/app_logo.dart';
 import '../../../media/presentation/providers/media_providers.dart';
 import '../../../upload/domain/entities/video_upload_item.dart';
 import '../../../media/presentation/widgets/scan_button.dart';
@@ -101,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final network = ref.watch(networkKindProvider).value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('TubeFlow')),
+      appBar: AppBar(title: const AppBarTitle()),
       body: ListView(
         children: [
           ListTile(
