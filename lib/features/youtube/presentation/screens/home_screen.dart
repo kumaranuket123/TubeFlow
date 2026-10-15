@@ -13,6 +13,7 @@ import '../providers/youtube_auth_providers.dart';
 import '../../../upload/presentation/screens/manual_upload_picker.dart';
 import '../../../upload/presentation/providers/upload_providers.dart';
 import '../../../upload/presentation/widgets/upload_queue_list.dart';
+import '../open_playlist.dart';
 import 'playlist_picker_screen.dart';
 import 'youtube_connect_screen.dart';
 
@@ -119,7 +120,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             leading: const Icon(Icons.playlist_add_check),
             title: const Text('Playlist'),
             subtitle: Text(settings?.selectedPlaylistTitle ?? 'Not selected'),
-            trailing: const Icon(Icons.arrow_drop_down),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (settings?.selectedPlaylistId != null)
+                  IconButton(
+                    tooltip: 'Open playlist on YouTube',
+                    icon: const Icon(Icons.open_in_new),
+                    onPressed: () =>
+                        openPlaylistOnYoutube(context, settings!.selectedPlaylistId!),
+                  ),
+                const Icon(Icons.arrow_drop_down),
+              ],
+            ),
             enabled: auth is AuthConnected,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const PlaylistPickerScreen()),

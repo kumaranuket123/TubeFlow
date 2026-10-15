@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../settings/presentation/providers/settings_providers.dart';
+import '../open_playlist.dart';
 import '../providers/youtube_auth_providers.dart';
 
 class PlaylistPickerScreen extends ConsumerWidget {
@@ -63,6 +64,11 @@ class PlaylistPickerScreen extends ConsumerWidget {
                     final p = list[i];
                     return RadioListTile<String>(
                       value: p.id,
+                      secondary: IconButton(
+                        tooltip: 'Open on YouTube',
+                        icon: const Icon(Icons.open_in_new),
+                        onPressed: () => openPlaylistOnYoutube(context, p.id),
+                      ),
                       title: Text(p.title),
                       subtitle: Text([
                         if (p.itemCount != null) '${p.itemCount} videos',
