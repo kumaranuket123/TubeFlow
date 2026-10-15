@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -33,6 +33,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 6) {
             await m.addColumn(uploadQueue, uploadQueue.originalDeleted);
+          }
+          if (from < 7) {
+            await m.addColumn(appSettingsRows, appSettingsRows.allow5g);
           }
         },
       );

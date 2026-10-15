@@ -26,3 +26,13 @@ const String kOAuthRedirectScheme =
     'com.googleusercontent.apps.45915931754-oggc6tn5ip85teautmh0g7v00s7frbds';
 
 const String kOAuthRedirectUri = '$kOAuthRedirectScheme:/oauth2redirect';
+
+/// Public URL of the hosted privacy policy (docs/privacy.html on GitHub
+/// Pages). Also entered in the Google OAuth consent screen and Play Console.
+/// When non-empty the in-app policy screen offers an "Open online" button.
+const String kPrivacyPolicyUrl = '';
+
+/// Support/contact address shown in the in-app privacy policy. Hidden while empty.
+const String kSupportEmail = 'charlesramanewton@gmail.com';
+
+const String kPrivacyPolicyUpdated = 'October 15, 2026';

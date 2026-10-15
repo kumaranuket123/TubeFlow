@@ -1,0 +1,19 @@
+name: cellular_generation
+description: Reports the current cellular generation (5G/4G/3G/2G) on Android. Local plugin so it is registered in every Flutter engine (UI, foreground service, WorkManager).
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.crn.tubeflow.cellular
+        pluginClass: CellularGenerationPlugin

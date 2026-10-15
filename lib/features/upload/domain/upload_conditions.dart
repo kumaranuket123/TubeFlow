@@ -6,6 +6,7 @@ import '../../settings/domain/settings_repository.dart';
 enum BlockReason {
   noNetwork('Waiting for network'),
   needsWifi('Waiting for Wi-Fi'),
+  needsWifiOr5g('Waiting for Wi-Fi or 5G'),
   needsCharger('Waiting for charger');
 
   const BlockReason(this.message);
@@ -17,13 +18,18 @@ enum BlockReason {
 /// yet). Pass `chargingOnly: false` to evaluate only the network rules.
 BlockReason? evaluateConditions({
   required bool wifiOnly,
+  bool allow5g = false,
   required bool chargingOnly,
   required NetworkKind? network,
   required bool? charging,
 }) {
   if (network == NetworkKind.none) return BlockReason.noNetwork;
-  if (wifiOnly && network != null && network != NetworkKind.wifi) {
-    return BlockReason.needsWifi;
+  if (wifiOnly && network != null) {
+    final allowed =
+        network == NetworkKind.wifi || (allow5g && network == NetworkKind.mobile5g);
+    if (!allowed) {
+      return allow5g ? BlockReason.needsWifiOr5g : BlockReason.needsWifi;
+    }
   }
   if (chargingOnly && charging == false) return BlockReason.needsCharger;
   return null;
@@ -36,6 +42,7 @@ BlockReason? evaluateSettings(
 ) =>
     evaluateConditions(
       wifiOnly: s.wifiOnly,
+      allow5g: s.allow5g,
       chargingOnly: s.chargingOnly,
       network: network,
       charging: charging,
@@ -73,6 +80,7 @@ class UploadConditionChecker {
     final s = await _settings.get();
     return evaluateConditions(
       wifiOnly: s.wifiOnly,
+      allow5g: s.allow5g,
       chargingOnly: false,
       network: await _network.current(),
       charging: null,

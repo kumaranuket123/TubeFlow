@@ -79,7 +79,7 @@ final resumeOnConditionsProvider = Provider<void>((ref) {
 final backgroundScheduleSyncProvider = Provider<void>((ref) {
   final rules = ref.watch(appSettingsProvider.select((a) {
     final s = a.value;
-    return s == null ? null : (s.autoUpload, s.wifiOnly, s.chargingOnly);
+    return s == null ? null : (s.autoUpload, s.wifiOnly, s.chargingOnly, s.allow5g);
   }));
   final hasPending = ref.watch(uploadQueueProvider.select(
       (a) => a.value?.any((i) => !i.status.isTerminal) ?? false));
@@ -89,6 +89,7 @@ final backgroundScheduleSyncProvider = Provider<void>((ref) {
     hasPending: hasPending,
     wifiOnly: rules.$2,
     chargingOnly: rules.$3,
+    allow5g: rules.$4,
   );
 });
 

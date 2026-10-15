@@ -18,6 +18,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
           selectedPlaylistTitle: r.selectedPlaylistTitle,
           autoUpload: r.autoUpload,
           wifiOnly: r.wifiOnly,
+          allow5g: r.allow5g,
           chargingOnly: r.chargingOnly,
           keepOriginal: r.keepOriginal,
           scanBaseline: r.scanBaseline,
@@ -56,6 +57,18 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<void> setWifiOnly(bool v) =>
       _upsert(AppSettingsRowsCompanion(wifiOnly: Value(v)));
+
+  @override
+  Future<void> setAllow5g(bool v) =>
+      _upsert(AppSettingsRowsCompanion(allow5g: Value(v)));
+
+  @override
+  Future<void> setUploadNetwork(UploadNetwork v) => _upsert(
+        AppSettingsRowsCompanion(
+          wifiOnly: Value(v != UploadNetwork.any),
+          allow5g: Value(v == UploadNetwork.wifiOr5g),
+        ),
+      );
 
   @override
   Future<void> setChargingOnly(bool v) =>

@@ -46,6 +46,18 @@ void main() {
       expect(e(NetworkKind.wifi, wifi: true), isNull);
       expect(e(NetworkKind.mobile), isNull);
     });
+    test('Wi-Fi or 5G: allows Wi-Fi and 5G, pauses on 4G and below', () {
+      BlockReason? r(NetworkKind n) => evaluateConditions(
+          wifiOnly: true, allow5g: true, chargingOnly: false, network: n, charging: null);
+      expect(r(NetworkKind.wifi), isNull);
+      expect(r(NetworkKind.mobile5g), isNull);
+      expect(r(NetworkKind.mobile), BlockReason.needsWifiOr5g);
+      expect(r(NetworkKind.none), BlockReason.noNetwork);
+    });
+    test('5G is still blocked when only Wi-Fi is allowed', () {
+      expect(e(NetworkKind.mobile5g, wifi: true), BlockReason.needsWifi);
+      expect(e(NetworkKind.mobile5g), isNull); // any network
+    });
     test('charging only blocks on battery, allows on power', () {
       expect(e(NetworkKind.wifi, chg: true, c: false), BlockReason.needsCharger);
       expect(e(NetworkKind.wifi, chg: true, c: true), isNull);

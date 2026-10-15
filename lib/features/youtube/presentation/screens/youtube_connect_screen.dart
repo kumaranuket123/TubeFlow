@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/widgets/app_logo.dart';
+import '../../../settings/presentation/screens/privacy_policy_screen.dart';
 import '../../domain/entities/auth_state.dart';
 import '../../domain/entities/youtube_channel.dart';
 import '../providers/youtube_auth_providers.dart';
@@ -16,11 +17,24 @@ class YoutubeConnectScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const AppBarTitle()),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: _buildBody(context, ref, authState),
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: _buildBody(context, ref, authState),
+              ),
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: TextButton(
+              onPressed: () => PrivacyPolicyScreen.open(context),
+              child: const Text('Privacy Policy'),
+            ),
+          ),
+        ],
       ),
     );
   }

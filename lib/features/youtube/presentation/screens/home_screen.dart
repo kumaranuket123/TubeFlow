@@ -9,11 +9,13 @@ import '../../../media/presentation/widgets/scan_button.dart';
 import '../../../settings/presentation/providers/auto_upload_controller.dart';
 import '../../../settings/presentation/screens/auto_upload_settings_screen.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
+import '../../../settings/domain/entities/app_settings.dart';
 import '../../domain/entities/auth_state.dart';
 import '../providers/youtube_auth_providers.dart';
 import '../../../upload/presentation/screens/manual_upload_picker.dart';
 import '../../../upload/presentation/providers/upload_providers.dart';
 import '../../../upload/presentation/widgets/upload_queue_list.dart';
+import '../../../settings/presentation/screens/privacy_policy_screen.dart';
 import '../open_playlist.dart';
 import 'playlist_picker_screen.dart';
 import 'youtube_connect_screen.dart';
@@ -102,7 +104,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final network = ref.watch(networkKindProvider).value;
 
     return Scaffold(
-      appBar: AppBar(title: const AppBarTitle()),
+      appBar: AppBar(
+        title: const AppBarTitle(),
+        actions: [
+          IconButton(
+            tooltip: 'Privacy Policy',
+            icon: const Icon(Icons.privacy_tip_outlined),
+            onPressed: () => PrivacyPolicyScreen.open(context),
+          ),
+        ],
+      ),
       body: ListView(
         children: [
           ListTile(
@@ -144,7 +155,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             title: const Text('Auto Upload'),
             subtitle: Text([
               (settings?.autoUpload ?? false) ? 'ON' : 'OFF',
-              (settings?.wifiOnly ?? true) ? 'Wi-Fi only' : 'Any network',
+              (settings?.uploadNetwork ?? UploadNetwork.wifiOnly).label,
               if (settings?.chargingOnly ?? false) 'While charging',
             ].join(' · ')),
             trailing: const Icon(Icons.chevron_right),
@@ -156,6 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             title: const Text('Network'),
             subtitle: Text(switch (network) {
               NetworkKind.wifi => 'Wi-Fi',
+              NetworkKind.mobile5g => 'Mobile data (5G)',
               NetworkKind.mobile => 'Mobile data',
               NetworkKind.none => 'Offline',
               null => 'Checking…',

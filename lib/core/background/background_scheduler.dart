@@ -40,6 +40,7 @@ class BackgroundScheduler {
     required bool autoUpload,
     required bool hasPending,
     required bool wifiOnly,
+    required bool allow5g,
     required bool chargingOnly,
   }) async {
     if (!autoUpload && !hasPending) {
@@ -51,7 +52,11 @@ class BackgroundScheduler {
       _periodicTask,
       frequency: const Duration(minutes: 15),
       constraints: Constraints(
-        networkType: wifiOnly ? NetworkType.unmetered : NetworkType.connected,
+        // Wi-Fi or 5G can't be expressed as a WorkManager constraint; run on
+        // any connection and let the in-app rules defer on 4G.
+        networkType: wifiOnly && !allow5g
+            ? NetworkType.unmetered
+            : NetworkType.connected,
         requiresCharging: chargingOnly,
       ),
       existingWorkPolicy: ExistingPeriodicWorkPolicy.update,

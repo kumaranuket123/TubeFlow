@@ -451,6 +451,21 @@ class $AppSettingsRowsTable extends AppSettingsRows
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _allow5gMeta = const VerificationMeta(
+    'allow5g',
+  );
+  @override
+  late final GeneratedColumn<bool> allow5g = GeneratedColumn<bool>(
+    'allow5g',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("allow5g" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _chargingOnlyMeta = const VerificationMeta(
     'chargingOnly',
   );
@@ -520,6 +535,7 @@ class $AppSettingsRowsTable extends AppSettingsRows
     selectedPlaylistTitle,
     autoUpload,
     wifiOnly,
+    allow5g,
     chargingOnly,
     keepOriginal,
     scanBaseline,
@@ -569,6 +585,12 @@ class $AppSettingsRowsTable extends AppSettingsRows
       context.handle(
         _wifiOnlyMeta,
         wifiOnly.isAcceptableOrUnknown(data['wifi_only']!, _wifiOnlyMeta),
+      );
+    }
+    if (data.containsKey('allow5g')) {
+      context.handle(
+        _allow5gMeta,
+        allow5g.isAcceptableOrUnknown(data['allow5g']!, _allow5gMeta),
       );
     }
     if (data.containsKey('charging_only')) {
@@ -642,6 +664,10 @@ class $AppSettingsRowsTable extends AppSettingsRows
         DriftSqlType.bool,
         data['${effectivePrefix}wifi_only'],
       )!,
+      allow5g: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}allow5g'],
+      )!,
       chargingOnly: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}charging_only'],
@@ -677,6 +703,9 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   final String? selectedPlaylistTitle;
   final bool autoUpload;
   final bool wifiOnly;
+
+  /// With wifiOnly ON: also allow mobile data while on 5G (pauses on 4G and below).
+  final bool allow5g;
   final bool chargingOnly;
   final bool keepOriginal;
 
@@ -693,6 +722,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     this.selectedPlaylistTitle,
     required this.autoUpload,
     required this.wifiOnly,
+    required this.allow5g,
     required this.chargingOnly,
     required this.keepOriginal,
     this.scanBaseline,
@@ -711,6 +741,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     }
     map['auto_upload'] = Variable<bool>(autoUpload);
     map['wifi_only'] = Variable<bool>(wifiOnly);
+    map['allow5g'] = Variable<bool>(allow5g);
     map['charging_only'] = Variable<bool>(chargingOnly);
     map['keep_original'] = Variable<bool>(keepOriginal);
     if (!nullToAbsent || scanBaseline != null) {
@@ -736,6 +767,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
           : Value(selectedPlaylistTitle),
       autoUpload: Value(autoUpload),
       wifiOnly: Value(wifiOnly),
+      allow5g: Value(allow5g),
       chargingOnly: Value(chargingOnly),
       keepOriginal: Value(keepOriginal),
       scanBaseline: scanBaseline == null && nullToAbsent
@@ -765,6 +797,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       ),
       autoUpload: serializer.fromJson<bool>(json['autoUpload']),
       wifiOnly: serializer.fromJson<bool>(json['wifiOnly']),
+      allow5g: serializer.fromJson<bool>(json['allow5g']),
       chargingOnly: serializer.fromJson<bool>(json['chargingOnly']),
       keepOriginal: serializer.fromJson<bool>(json['keepOriginal']),
       scanBaseline: serializer.fromJson<DateTime?>(json['scanBaseline']),
@@ -783,6 +816,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       ),
       'autoUpload': serializer.toJson<bool>(autoUpload),
       'wifiOnly': serializer.toJson<bool>(wifiOnly),
+      'allow5g': serializer.toJson<bool>(allow5g),
       'chargingOnly': serializer.toJson<bool>(chargingOnly),
       'keepOriginal': serializer.toJson<bool>(keepOriginal),
       'scanBaseline': serializer.toJson<DateTime?>(scanBaseline),
@@ -797,6 +831,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     Value<String?> selectedPlaylistTitle = const Value.absent(),
     bool? autoUpload,
     bool? wifiOnly,
+    bool? allow5g,
     bool? chargingOnly,
     bool? keepOriginal,
     Value<DateTime?> scanBaseline = const Value.absent(),
@@ -812,6 +847,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
         : this.selectedPlaylistTitle,
     autoUpload: autoUpload ?? this.autoUpload,
     wifiOnly: wifiOnly ?? this.wifiOnly,
+    allow5g: allow5g ?? this.allow5g,
     chargingOnly: chargingOnly ?? this.chargingOnly,
     keepOriginal: keepOriginal ?? this.keepOriginal,
     scanBaseline: scanBaseline.present ? scanBaseline.value : this.scanBaseline,
@@ -833,6 +869,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
           ? data.autoUpload.value
           : this.autoUpload,
       wifiOnly: data.wifiOnly.present ? data.wifiOnly.value : this.wifiOnly,
+      allow5g: data.allow5g.present ? data.allow5g.value : this.allow5g,
       chargingOnly: data.chargingOnly.present
           ? data.chargingOnly.value
           : this.chargingOnly,
@@ -857,6 +894,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
           ..write('selectedPlaylistTitle: $selectedPlaylistTitle, ')
           ..write('autoUpload: $autoUpload, ')
           ..write('wifiOnly: $wifiOnly, ')
+          ..write('allow5g: $allow5g, ')
           ..write('chargingOnly: $chargingOnly, ')
           ..write('keepOriginal: $keepOriginal, ')
           ..write('scanBaseline: $scanBaseline, ')
@@ -873,6 +911,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     selectedPlaylistTitle,
     autoUpload,
     wifiOnly,
+    allow5g,
     chargingOnly,
     keepOriginal,
     scanBaseline,
@@ -888,6 +927,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
           other.selectedPlaylistTitle == this.selectedPlaylistTitle &&
           other.autoUpload == this.autoUpload &&
           other.wifiOnly == this.wifiOnly &&
+          other.allow5g == this.allow5g &&
           other.chargingOnly == this.chargingOnly &&
           other.keepOriginal == this.keepOriginal &&
           other.scanBaseline == this.scanBaseline &&
@@ -901,6 +941,7 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
   final Value<String?> selectedPlaylistTitle;
   final Value<bool> autoUpload;
   final Value<bool> wifiOnly;
+  final Value<bool> allow5g;
   final Value<bool> chargingOnly;
   final Value<bool> keepOriginal;
   final Value<DateTime?> scanBaseline;
@@ -912,6 +953,7 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     this.selectedPlaylistTitle = const Value.absent(),
     this.autoUpload = const Value.absent(),
     this.wifiOnly = const Value.absent(),
+    this.allow5g = const Value.absent(),
     this.chargingOnly = const Value.absent(),
     this.keepOriginal = const Value.absent(),
     this.scanBaseline = const Value.absent(),
@@ -924,6 +966,7 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     this.selectedPlaylistTitle = const Value.absent(),
     this.autoUpload = const Value.absent(),
     this.wifiOnly = const Value.absent(),
+    this.allow5g = const Value.absent(),
     this.chargingOnly = const Value.absent(),
     this.keepOriginal = const Value.absent(),
     this.scanBaseline = const Value.absent(),
@@ -936,6 +979,7 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     Expression<String>? selectedPlaylistTitle,
     Expression<bool>? autoUpload,
     Expression<bool>? wifiOnly,
+    Expression<bool>? allow5g,
     Expression<bool>? chargingOnly,
     Expression<bool>? keepOriginal,
     Expression<DateTime>? scanBaseline,
@@ -950,6 +994,7 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
         'selected_playlist_title': selectedPlaylistTitle,
       if (autoUpload != null) 'auto_upload': autoUpload,
       if (wifiOnly != null) 'wifi_only': wifiOnly,
+      if (allow5g != null) 'allow5g': allow5g,
       if (chargingOnly != null) 'charging_only': chargingOnly,
       if (keepOriginal != null) 'keep_original': keepOriginal,
       if (scanBaseline != null) 'scan_baseline': scanBaseline,
@@ -965,6 +1010,7 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     Value<String?>? selectedPlaylistTitle,
     Value<bool>? autoUpload,
     Value<bool>? wifiOnly,
+    Value<bool>? allow5g,
     Value<bool>? chargingOnly,
     Value<bool>? keepOriginal,
     Value<DateTime?>? scanBaseline,
@@ -978,6 +1024,7 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
           selectedPlaylistTitle ?? this.selectedPlaylistTitle,
       autoUpload: autoUpload ?? this.autoUpload,
       wifiOnly: wifiOnly ?? this.wifiOnly,
+      allow5g: allow5g ?? this.allow5g,
       chargingOnly: chargingOnly ?? this.chargingOnly,
       keepOriginal: keepOriginal ?? this.keepOriginal,
       scanBaseline: scanBaseline ?? this.scanBaseline,
@@ -1006,6 +1053,9 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     if (wifiOnly.present) {
       map['wifi_only'] = Variable<bool>(wifiOnly.value);
     }
+    if (allow5g.present) {
+      map['allow5g'] = Variable<bool>(allow5g.value);
+    }
     if (chargingOnly.present) {
       map['charging_only'] = Variable<bool>(chargingOnly.value);
     }
@@ -1032,6 +1082,7 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
           ..write('selectedPlaylistTitle: $selectedPlaylistTitle, ')
           ..write('autoUpload: $autoUpload, ')
           ..write('wifiOnly: $wifiOnly, ')
+          ..write('allow5g: $allow5g, ')
           ..write('chargingOnly: $chargingOnly, ')
           ..write('keepOriginal: $keepOriginal, ')
           ..write('scanBaseline: $scanBaseline, ')
@@ -2361,6 +2412,7 @@ typedef $$AppSettingsRowsTableCreateCompanionBuilder =
       Value<String?> selectedPlaylistTitle,
       Value<bool> autoUpload,
       Value<bool> wifiOnly,
+      Value<bool> allow5g,
       Value<bool> chargingOnly,
       Value<bool> keepOriginal,
       Value<DateTime?> scanBaseline,
@@ -2374,6 +2426,7 @@ typedef $$AppSettingsRowsTableUpdateCompanionBuilder =
       Value<String?> selectedPlaylistTitle,
       Value<bool> autoUpload,
       Value<bool> wifiOnly,
+      Value<bool> allow5g,
       Value<bool> chargingOnly,
       Value<bool> keepOriginal,
       Value<DateTime?> scanBaseline,
@@ -2412,6 +2465,11 @@ class $$AppSettingsRowsTableFilterComposer
 
   ColumnFilters<bool> get wifiOnly => $composableBuilder(
     column: $table.wifiOnly,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get allow5g => $composableBuilder(
+    column: $table.allow5g,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2475,6 +2533,11 @@ class $$AppSettingsRowsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get allow5g => $composableBuilder(
+    column: $table.allow5g,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get chargingOnly => $composableBuilder(
     column: $table.chargingOnly,
     builder: (column) => ColumnOrderings(column),
@@ -2530,6 +2593,9 @@ class $$AppSettingsRowsTableAnnotationComposer
 
   GeneratedColumn<bool> get wifiOnly =>
       $composableBuilder(column: $table.wifiOnly, builder: (column) => column);
+
+  GeneratedColumn<bool> get allow5g =>
+      $composableBuilder(column: $table.allow5g, builder: (column) => column);
 
   GeneratedColumn<bool> get chargingOnly => $composableBuilder(
     column: $table.chargingOnly,
@@ -2597,6 +2663,7 @@ class $$AppSettingsRowsTableTableManager
                 Value<String?> selectedPlaylistTitle = const Value.absent(),
                 Value<bool> autoUpload = const Value.absent(),
                 Value<bool> wifiOnly = const Value.absent(),
+                Value<bool> allow5g = const Value.absent(),
                 Value<bool> chargingOnly = const Value.absent(),
                 Value<bool> keepOriginal = const Value.absent(),
                 Value<DateTime?> scanBaseline = const Value.absent(),
@@ -2608,6 +2675,7 @@ class $$AppSettingsRowsTableTableManager
                 selectedPlaylistTitle: selectedPlaylistTitle,
                 autoUpload: autoUpload,
                 wifiOnly: wifiOnly,
+                allow5g: allow5g,
                 chargingOnly: chargingOnly,
                 keepOriginal: keepOriginal,
                 scanBaseline: scanBaseline,
@@ -2621,6 +2689,7 @@ class $$AppSettingsRowsTableTableManager
                 Value<String?> selectedPlaylistTitle = const Value.absent(),
                 Value<bool> autoUpload = const Value.absent(),
                 Value<bool> wifiOnly = const Value.absent(),
+                Value<bool> allow5g = const Value.absent(),
                 Value<bool> chargingOnly = const Value.absent(),
                 Value<bool> keepOriginal = const Value.absent(),
                 Value<DateTime?> scanBaseline = const Value.absent(),
@@ -2632,6 +2701,7 @@ class $$AppSettingsRowsTableTableManager
                 selectedPlaylistTitle: selectedPlaylistTitle,
                 autoUpload: autoUpload,
                 wifiOnly: wifiOnly,
+                allow5g: allow5g,
                 chargingOnly: chargingOnly,
                 keepOriginal: keepOriginal,
                 scanBaseline: scanBaseline,

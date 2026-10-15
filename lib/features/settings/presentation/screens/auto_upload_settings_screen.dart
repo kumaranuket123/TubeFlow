@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/permissions/phone_state_permission_service.dart';
 import '../../../youtube/presentation/screens/playlist_picker_screen.dart';
 import '../providers/auto_upload_controller.dart';
 import '../providers/settings_providers.dart';
@@ -30,12 +31,12 @@ class AutoUploadSettingsScreen extends ConsumerWidget {
               }
             },
           ),
-          SwitchListTile(
-            title: const Text('Wi-Fi only'),
-            subtitle: const Text(
-                'Never use mobile data. Leaving Wi-Fi pauses an upload; it resumes later.'),
-            value: s.wifiOnly,
-            onChanged: repo.setWifiOnly,
+          ListTile(
+            title: const Text('Upload over'),
+            subtitle: Text(
+                '${s.uploadNetwork.label}. ${s.uploadNetwork.description}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _chooseNetwork(context, ref, s.uploadNetwork),
           ),
           SwitchListTile(
             title: const Text('Upload only while charging'),
@@ -67,4 +68,49 @@ class AutoUploadSettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _chooseNetwork(
+    BuildContext context, WidgetRef ref, UploadNetwork current) async {
+  final choice = await showDialog<UploadNetwork>(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      title: const Text('Upload over'),
+      children: [
+        RadioGroup<UploadNetwork>(
+          groupValue: current,
+          onChanged: (v) => Navigator.of(ctx).pop(v),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final o in UploadNetwork.values)
+                RadioListTile<UploadNetwork>(
+                  value: o,
+                  title: Text(o.label),
+                  subtitle: Text(o.description),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+  if (choice == null || choice == current || !context.mounted) return;
+
+  final messenger = ScaffoldMessenger.of(context);
+  if (choice == UploadNetwork.wifiOr5g) {
+    // Phone-state permission is only needed to tell 5G from 4G.
+    final perm = PhoneStatePermissionService();
+    if (!await perm.request()) {
+      final forever = await perm.isPermanentlyDenied();
+      messenger.showSnackBar(SnackBar(
+        content: const Text('Phone-state permission is needed to detect 5G.'),
+        action: forever
+            ? SnackBarAction(label: 'Settings', onPressed: perm.openSettings)
+            : null,
+      ));
+      return;
+    }
+  }
+  await ref.read(settingsRepositoryProvider).setUploadNetwork(choice);
 }

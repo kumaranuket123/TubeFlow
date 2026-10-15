@@ -121,6 +121,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.13.0"
+  cellular_generation:
+    dependency: "direct main"
+    description:
+      path: "packages/cellular_generation"
+      relative: true
+    source: path
+    version: "0.0.1"
   characters:
     dependency: transitive
     description:

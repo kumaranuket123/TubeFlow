@@ -7,6 +7,8 @@ class AppSettingsRows extends Table {
   TextColumn get selectedPlaylistTitle => text().nullable()();
   BoolColumn get autoUpload => boolean().withDefault(const Constant(false))();
   BoolColumn get wifiOnly => boolean().withDefault(const Constant(true))();
+  /// With wifiOnly ON: also allow mobile data while on 5G (pauses on 4G and below).
+  BoolColumn get allow5g => boolean().withDefault(const Constant(false))();
   BoolColumn get chargingOnly => boolean().withDefault(const Constant(false))();
   BoolColumn get keepOriginal => boolean().withDefault(const Constant(true))();
 

@@ -6,6 +6,8 @@ abstract class SettingsRepository {
   Future<void> setPlaylist(String? id, String? title);
   Future<void> setAutoUpload(bool value);
   Future<void> setWifiOnly(bool value);
+  Future<void> setAllow5g(bool value);
+  Future<void> setUploadNetwork(UploadNetwork value);
   Future<void> setChargingOnly(bool value);
   Future<void> setKeepOriginal(bool value);
 

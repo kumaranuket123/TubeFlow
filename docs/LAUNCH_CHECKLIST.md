@@ -58,6 +58,7 @@ before inviting many users.
   servers; tokens stored on device; Ads: none; Target audience: 13+.
 - Foreground service (`dataSync`): "user-initiated upload of recorded videos to
   the user's YouTube account"; attach a short screen recording.
+- `READ_PHONE_STATE`: optional, requested only when the user enables "Also allow 5G"; used solely to read the cellular generation (5G vs 4G). Not collected or shared. Mention it in Data safety / permissions declaration.
 - `READ_MEDIA_VIDEO`: core functionality (detect new camera videos for upload).
 - New personal developer accounts must run a closed test with 12+ testers for 14
   days before production access.
