@@ -59,8 +59,10 @@ time. You can request more via the *YouTube API Services – Audit and Quota
 Extension* form.
 
 Note: Google restricts uploads from API projects that have not passed a
-compliance audit to **private** visibility. TubeFlow only ever uploads private
-videos, so this does not affect it.
+compliance audit to **private** visibility. TubeFlow uploads as private by
+default; if the user chooses **unlisted** (or changes a video to unlisted), YouTube
+may force it back to private until the project passes the audit. TubeFlow
+never publishes videos as public.
 
 ## 6. Verify
 Run the app, tap **Connect YouTube Account**, finish sign-in, and confirm your

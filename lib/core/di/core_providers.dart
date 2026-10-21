@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../database/app_database.dart';
+import '../quota/quota_tracker.dart';
 import '../security/secure_token_storage.dart';
 
 /// Cross-cutting singletons shared by every feature. All `keepAlive: true`
@@ -11,7 +12,23 @@ import '../security/secure_token_storage.dart';
 /// handles) rather than screen-scoped data.
 
 final dioProvider = Provider<Dio>((ref) {
-  return Dio();
+  final dio = Dio();
+  dio.interceptors.add(QuotaInterceptor(ref.watch(quotaTrackerProvider)));
+  return dio;
+});
+
+final quotaTrackerProvider = Provider<QuotaTracker>((ref) {
+  return QuotaTracker(ref.watch(appDatabaseProvider));
+});
+
+/// Units spent today (Pacific day). Polled because other engines (background
+/// uploads) write through their own DB connections.
+final quotaUsedTodayProvider = StreamProvider.autoDispose<int>((ref) async* {
+  final tracker = ref.watch(quotaTrackerProvider);
+  while (true) {
+    yield await tracker.usedToday();
+    await Future<void>.delayed(const Duration(seconds: 3));
+  }
 });
 
 final flutterAppAuthProvider = Provider<FlutterAppAuth>((ref) {

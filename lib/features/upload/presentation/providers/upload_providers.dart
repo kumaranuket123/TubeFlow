@@ -152,3 +152,34 @@ final uploadQueueProvider = StreamProvider<List<VideoUploadItem>>((ref) {
   ref.onDispose(timer.cancel);
   return ref.watch(uploadQueueRepositoryProvider).watchAll();
 });
+
+/// When uploads are paused for the YouTube quota (null = not paused). Polled:
+/// the pause is written by whichever engine hit the quota error.
+final quotaPausedUntilProvider = StreamProvider.autoDispose<DateTime?>((ref) async* {
+  final settings = ref.watch(settingsRepositoryProvider);
+  while (true) {
+    final until = await settings.quotaPausedUntil();
+    yield until != null && until.isAfter(DateTime.now()) ? until : null;
+    await Future<void>.delayed(const Duration(seconds: 3));
+  }
+});
+
+/// Restarts the queue as soon as a quota pause ends (while the app is open;
+/// the periodic WorkManager job covers the rest).
+final resumeAfterQuotaResetProvider = Provider<void>((ref) {
+  Timer? timer;
+  DateTime? scheduledFor;
+  ref.listen<AsyncValue<DateTime?>>(quotaPausedUntilProvider, (_, next) {
+    final until = next.value;
+    if (until == null || until == scheduledFor) return;
+    scheduledFor = until;
+    timer?.cancel();
+    final wait = until.difference(DateTime.now());
+    timer = Timer(wait.isNegative ? Duration.zero : wait, () async {
+      if (await ref.read(uploadQueueRepositoryProvider).nextPending() != null) {
+        await ref.read(uploadTriggerProvider)();
+      }
+    });
+  }, fireImmediately: true);
+  ref.onDispose(() => timer?.cancel());
+});

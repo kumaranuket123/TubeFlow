@@ -44,7 +44,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             Text('Last updated: $kPrivacyPolicyUpdated', style: text.bodySmall),
             const SizedBox(height: 12),
             p('TubeFlow finds videos recorded with your camera and uploads them to '
-                'your own YouTube channel as private videos. This policy explains '
+                'your own YouTube channel as private or unlisted videos (never public). This policy explains '
                 'what data the app accesses and how it is handled.'),
             h('Summary'),
             b('TubeFlow has no server. The developer does not receive, store or see your data.'),
@@ -52,7 +52,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             b('No ads, no analytics, no third-party trackers.'),
             h('Data the app accesses'),
             b('Google sign-in: OAuth tokens, plus your YouTube channel name, ID and picture to show which account is connected.'),
-            b('YouTube data: with the YouTube scope the app uploads videos, lists your playlists, creates playlists you ask for, adds uploaded videos to your chosen playlist, and checks that an upload is private.'),
+            b('YouTube data: with the YouTube scope the app uploads videos, lists your playlists, creates playlists you ask for, adds uploaded videos to your chosen playlist, changes the visibility (private or unlisted) of videos you select, deletes videos or playlists you explicitly choose to delete, and checks that an upload has the visibility you chose.'),
             b('Videos on your device: with the video permission you grant, the app reads videos in your media library (name, size, date and the file) to detect and upload new recordings. It does not access photos, audio or other files.'),
             b('Network and battery state: only to apply your rules (Wi-Fi only, while charging).'),
             b('Phone state (optional): if you turn on "Also allow 5G", the app asks for the phone-state permission only to read whether your mobile connection is 5G or 4G. It does not read your phone number, calls, contacts or device identifiers, and the value never leaves your device.'),

@@ -21,6 +21,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
           allow5g: r.allow5g,
           chargingOnly: r.chargingOnly,
           keepOriginal: r.keepOriginal,
+          visibility: UploadVisibility.fromApi(r.visibility),
           scanBaseline: r.scanBaseline,
         );
 
@@ -41,6 +42,19 @@ class SettingsRepositoryImpl implements SettingsRepository {
               target: [_db.appSettingsRows.id]),
         );
   }
+
+  @override
+  Future<DateTime?> quotaPausedUntil() async {
+    final ms = (await _select.getSingleOrNull())?.quotaPausedUntilMs;
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  @override
+  Future<void> setQuotaPausedUntil(DateTime? until) => _upsert(
+        AppSettingsRowsCompanion(
+          quotaPausedUntilMs: Value(until?.millisecondsSinceEpoch),
+        ),
+      );
 
   @override
   Future<void> setPlaylist(String? id, String? title) => _upsert(
@@ -77,6 +91,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<void> setKeepOriginal(bool v) =>
       _upsert(AppSettingsRowsCompanion(keepOriginal: Value(v)));
+
+  @override
+  Future<void> setVisibility(UploadVisibility v) =>
+      _upsert(AppSettingsRowsCompanion(visibility: Value(v.apiValue)));
 
   @override
   Future<DateTime> ensureScanBaseline() async {

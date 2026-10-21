@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/error/exceptions.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
+import '../../domain/entities/youtube_playlist.dart';
 import '../open_playlist.dart';
+import '../../../upload/presentation/providers/upload_providers.dart';
 import '../providers/youtube_auth_providers.dart';
+import 'playlist_videos_screen.dart';
 
 class PlaylistPickerScreen extends ConsumerWidget {
   const PlaylistPickerScreen({super.key});
@@ -36,7 +40,10 @@ class PlaylistPickerScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Could not load playlists.\n$e', textAlign: TextAlign.center),
+                Text(
+                  'Could not load playlists.\n$e',
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () => ref.invalidate(playlistsProvider),
@@ -64,22 +71,98 @@ class PlaylistPickerScreen extends ConsumerWidget {
                     final p = list[i];
                     return RadioListTile<String>(
                       value: p.id,
-                      secondary: IconButton(
-                        tooltip: 'Open on YouTube',
-                        icon: const Icon(Icons.open_in_new),
-                        onPressed: () => openPlaylistOnYoutube(context, p.id),
+                      secondary: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Manage video visibility',
+                            icon: const Icon(Icons.visibility_outlined),
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    PlaylistVideosScreen(playlist: p),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Delete playlist',
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () => _deletePlaylist(context, ref, p),
+                          ),
+                          IconButton(
+                            tooltip: 'Open on YouTube',
+                            icon: const Icon(Icons.open_in_new),
+                            onPressed: () =>
+                                openPlaylistOnYoutube(context, p.id),
+                          ),
+                        ],
                       ),
                       title: Text(p.title),
-                      subtitle: Text([
-                        if (p.itemCount != null) '${p.itemCount} videos',
-                        if (p.privacyStatus != null) p.privacyStatus!,
-                      ].join(' · ')),
+                      subtitle: Text(
+                        [
+                          if (p.itemCount != null) '${p.itemCount} videos',
+                          if (p.privacyStatus != null) p.privacyStatus!,
+                        ].join(' · '),
+                      ),
                     );
                   },
                 ),
               ),
       ),
     );
+  }
+
+  Future<void> _deletePlaylist(
+    BuildContext context,
+    WidgetRef ref,
+    YoutubePlaylist p,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete "${p.title}"?'),
+        content: const Text(
+          'The playlist is deleted from YouTube and cannot be recovered. '
+          'The videos in it are NOT deleted. Uses 50 API quota units.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(youtubePlaylistServiceProvider).deletePlaylist(p.id);
+      if (!context.mounted) return;
+      await ref.read(uploadQueueRepositoryProvider).clearPlaylist(p.id);
+      final settings = ref.read(settingsRepositoryProvider);
+      if (ref.read(appSettingsProvider).value?.selectedPlaylistId == p.id) {
+        await settings.setPlaylist(null, null);
+      }
+      ref.invalidate(playlistsProvider);
+      messenger.showSnackBar(SnackBar(content: Text('Deleted "${p.title}".')));
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not delete playlist: ${e is YoutubeApiException ? e.message : e}',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _createPlaylist(BuildContext context, WidgetRef ref) async {
@@ -95,11 +178,15 @@ class PlaylistPickerScreen extends ConsumerWidget {
       final created = await ref
           .read(youtubePlaylistServiceProvider)
           .createPlaylist(result.title, privacyStatus: result.privacy);
-      await ref.read(settingsRepositoryProvider).setPlaylist(created.id, created.title);
+      await ref
+          .read(settingsRepositoryProvider)
+          .setPlaylist(created.id, created.title);
       ref.invalidate(playlistsProvider);
       navigator.pop();
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Could not create playlist: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not create playlist: $e')),
+      );
     }
   }
 }

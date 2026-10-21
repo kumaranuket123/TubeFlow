@@ -17,6 +17,16 @@ class YoutubeApiConstants {
   static const String tokenEndpoint = 'https://oauth2.googleapis.com/token';
   static const String revokeEndpoint = 'https://oauth2.googleapis.com/revoke';
 
+  /// Default daily Data API quota of a Google Cloud project.
+  static const int dailyQuota = 10000;
+
+  /// Units charged by `videos.insert` and by any other write call.
+  static const int insertVideoCost = 1600;
+  static const int writeCost = 50;
+
+  /// One upload ≈ videos.insert + playlistItems.insert + a few reads.
+  static const int uploadTotalCost = insertVideoCost + writeCost + 5;
+
   static const String apiBaseUrl = 'https://www.googleapis.com/youtube/v3';
   static const String uploadBaseUrl =
       'https://www.googleapis.com/upload/youtube/v3';

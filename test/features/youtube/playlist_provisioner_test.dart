@@ -9,6 +9,7 @@ import 'package:tube_flow/features/upload/domain/entities/upload_status.dart';
 import 'package:tube_flow/features/upload/domain/entities/video_upload_item.dart';
 import 'package:tube_flow/features/upload/domain/upload_manager.dart';
 import 'package:tube_flow/features/youtube/domain/entities/youtube_playlist.dart';
+import 'package:tube_flow/features/youtube/domain/entities/youtube_playlist_video.dart';
 import 'package:tube_flow/features/youtube/domain/playlist_provisioner.dart';
 import 'package:tube_flow/features/youtube/domain/services/youtube_playlist_service.dart';
 
@@ -21,6 +22,18 @@ class _FakePlaylists implements YoutubePlaylistService {
 
   @override
   Future<List<YoutubePlaylist>> getMyPlaylists() async => existing;
+
+  @override
+  Future<List<YoutubePlaylistVideo>> getPlaylistVideos(String playlistId) async => const [];
+
+  @override
+  Future<void> deleteVideo(String videoId) async {}
+
+  @override
+  Future<void> deletePlaylist(String playlistId) async {}
+
+  @override
+  Future<void> setVideoPrivacy(String videoId, String privacyStatus) async {}
 
   @override
   Future<YoutubePlaylist> createPlaylist(String title, {String privacyStatus = 'private'}) async {

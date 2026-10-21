@@ -16,6 +16,9 @@ class UploadQueue extends Table {
   RealColumn get progress => real().withDefault(const Constant(0))();
   TextColumn get youtubeVideoId => text().nullable()();
   TextColumn get sessionUri => text().nullable()();
+
+  /// Visibility the resumable session was created with (fixed for its life).
+  TextColumn get privacyStatus => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   IntColumn get retryCount => integer().withDefault(const Constant(0))();

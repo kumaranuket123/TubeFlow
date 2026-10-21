@@ -20,6 +20,7 @@ abstract class UploadQueueRepository {
     double? progress,
     String? youtubeVideoId,
     String? sessionUri,
+    String? privacyStatus,
     String? playlistId,
     int? retryCount,
     String? errorMessage,
@@ -32,6 +33,10 @@ abstract class UploadQueueRepository {
   Future<void> resetInterrupted();
 
   Future<void> delete(String id);
+
+  /// Forgets a deleted playlist on queued items so they fall back to the
+  /// currently selected one.
+  Future<void> clearPlaylist(String playlistId);
 
   Future<void> markOriginalsDeleted(Iterable<String> ids);
 }

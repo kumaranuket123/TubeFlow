@@ -19,12 +19,18 @@ Exception mapYoutubeDioError(
   if (code == null || code >= 500) return const TransientUploadException();
   if (code == 401) return const ReauthRequiredException();
 
-  final message = switch (youtubeErrorReason(e.response?.data)) {
-    'quotaExceeded' ||
-    'uploadLimitExceeded' ||
-    'dailyLimitExceeded' ||
-    'rateLimitExceeded' =>
+  final reason = youtubeErrorReason(e.response?.data);
+  if (reason == 'quotaExceeded' ||
+      reason == 'uploadLimitExceeded' ||
+      reason == 'dailyLimitExceeded') {
+    return QuotaExceededException(
       'YouTube upload quota reached. Try again later.',
+      statusCode: code,
+    );
+  }
+
+  final message = switch (reason) {
+    'rateLimitExceeded' => 'YouTube upload quota reached. Try again later.',
     'playlistNotFound' => 'Selected playlist is no longer available.',
     'forbidden' || 'insufficientPermissions' =>
       'YouTube denied the request. Please reconnect your YouTube account.',

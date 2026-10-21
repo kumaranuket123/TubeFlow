@@ -2,7 +2,7 @@
 
 Personal video automation for Android (Flutter). Record with your normal Camera
 app; TubeFlow detects the new video and uploads it **directly to your YouTube
-channel as a private video**, then adds it to a playlist you choose. There is no
+channel as a private (or unlisted) video**, then adds it to a playlist you choose. There is no
 backend: videos go phone → YouTube only.
 
 ```
@@ -12,7 +12,7 @@ Camera app → MediaStore → TubeFlow → YouTube Data API (resumable upload)
 
 ## Features
 - Google OAuth 2.0 (PKCE, no client secret), tokens in Keystore-backed storage
-- Playlist picker; uploads are always **private**
+- Playlist picker; uploads are **private** by default (unlisted optional, never public); multi-select videos in a playlist to switch them between private and unlisted
 - MediaStore detection (no hard-coded paths), completed-recording checks, manual scan
 - Manual multi-select upload through the same `UploadManager`
 - Persistent queue (Drift/SQLite): survives restarts; duplicate protection

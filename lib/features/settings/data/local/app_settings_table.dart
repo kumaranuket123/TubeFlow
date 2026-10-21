@@ -12,6 +12,9 @@ class AppSettingsRows extends Table {
   BoolColumn get chargingOnly => boolean().withDefault(const Constant(false))();
   BoolColumn get keepOriginal => boolean().withDefault(const Constant(true))();
 
+  /// YouTube privacyStatus for new uploads: `private` or `unlisted`.
+  TextColumn get visibility => text().withDefault(const Constant('private'))();
+
   /// First time scanning was used; only videos added after (baseline - 24h)
   /// are eligible, so the existing gallery is never bulk-queued.
   DateTimeColumn get scanBaseline => dateTime().nullable()();
@@ -19,6 +22,10 @@ class AppSettingsRows extends Table {
   /// Cross-isolate upload-runner lease (see RunnerLease). Epoch millis.
   TextColumn get runnerId => text().nullable()();
   IntColumn get runnerLeaseUntilMs => integer().nullable()();
+
+  /// Uploads are paused until this time (YouTube quota exhausted). Epoch
+  /// millis; shared by every engine through the DB.
+  IntColumn get quotaPausedUntilMs => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

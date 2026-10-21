@@ -31,6 +31,7 @@ class UploadQueueRepositoryImpl implements UploadQueueRepository {
         progress: r.progress,
         youtubeVideoId: r.youtubeVideoId,
         sessionUri: r.sessionUri,
+        privacyStatus: r.privacyStatus,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
         retryCount: r.retryCount,
@@ -119,6 +120,7 @@ class UploadQueueRepositoryImpl implements UploadQueueRepository {
     double? progress,
     String? youtubeVideoId,
     String? sessionUri,
+    String? privacyStatus,
     String? playlistId,
     int? retryCount,
     String? errorMessage,
@@ -133,6 +135,9 @@ class UploadQueueRepositoryImpl implements UploadQueueRepository {
         sessionUri: clearSessionUri
             ? const Value(null)
             : Value.absentIfNull(sessionUri),
+        privacyStatus: clearSessionUri
+            ? const Value(null)
+            : Value.absentIfNull(privacyStatus),
         playlistId: Value.absentIfNull(playlistId),
         retryCount: Value.absentIfNull(retryCount),
         errorMessage:
@@ -165,6 +170,12 @@ class UploadQueueRepositoryImpl implements UploadQueueRepository {
         );
       }
     });
+  }
+
+  @override
+  Future<void> clearPlaylist(String playlistId) async {
+    await (_db.update(_t)..where((t) => t.playlistId.equals(playlistId)))
+        .write(const UploadQueueCompanion(playlistId: Value(null)));
   }
 
   @override

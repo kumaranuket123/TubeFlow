@@ -33,7 +33,7 @@ class YoutubeUploadRemoteDataSource {
   final int maxChunkRetries;
   final Future<void> Function(Duration) _delay;
 
-  /// Always uploads as PRIVATE. Returns the new YouTube video id.
+  /// Uploads with [privacyStatus] (`private` or `unlisted`). Returns the new YouTube video id.
   /// Throws [TransientUploadException] when retries are exhausted (the
   /// session stays valid for a later resume).
   Future<String> uploadVideo({
@@ -41,6 +41,7 @@ class YoutubeUploadRemoteDataSource {
     required File file,
     required String title,
     String description = '',
+    String privacyStatus = 'private',
     String? sessionUri,
     Future<void> Function(String sessionUri)? onSessionStarted,
     void Function(double progress)? onProgress,
@@ -57,7 +58,7 @@ class YoutubeUploadRemoteDataSource {
 
     Future<void> startNew() async {
       session = await _startSession(
-          accessToken, total, title, description, cancelToken);
+          accessToken, total, title, description, privacyStatus, cancelToken);
       offset = 0;
       needResync = false;
       await onSessionStarted?.call(session!);
@@ -141,7 +142,7 @@ class YoutubeUploadRemoteDataSource {
       );
 
   Future<String> _startSession(String accessToken, int length, String title,
-      String description, CancelToken? cancelToken) async {
+      String description, String privacyStatus, CancelToken? cancelToken) async {
     try {
       final init = await _dio.post<dynamic>(
         '${YoutubeApiConstants.uploadBaseUrl}/videos',
@@ -149,7 +150,7 @@ class YoutubeUploadRemoteDataSource {
         data: {
           'snippet': {'title': title, 'description': description},
           'status': {
-            'privacyStatus': 'private',
+            'privacyStatus': privacyStatus,
             'selfDeclaredMadeForKids': false,
           },
         },
@@ -213,8 +214,9 @@ class YoutubeUploadRemoteDataSource {
   Exception _fatal(DioException e) =>
       mapYoutubeDioError(e, fallback: e.message ?? 'Upload failed');
 
-  /// `videos.list` status check; true only if the video is private.
-  Future<bool> isPrivate(String accessToken, String videoId) async {
+  /// `videos.list` status check; the video's `privacyStatus`, or null when
+  /// YouTube returns no item or status.
+  Future<String?> privacyStatusOf(String accessToken, String videoId) async {
     try {
       final r = await _dio.get<Map<String, dynamic>>(
         '${YoutubeApiConstants.apiBaseUrl}/videos',
@@ -222,7 +224,9 @@ class YoutubeUploadRemoteDataSource {
         options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
       final items = r.data?['items'] as List? ?? const [];
-      return items.isNotEmpty && items.first['status']['privacyStatus'] == 'private';
+      return items.isEmpty
+          ? null
+          : items.first['status']?['privacyStatus'] as String?;
     } on DioException catch (e) {
       throw mapYoutubeDioError(e, fallback: 'Could not verify visibility');
     }

@@ -16,6 +16,7 @@ class VideoUploadItem {
     this.progress = 0,
     this.youtubeVideoId,
     this.sessionUri,
+    this.privacyStatus,
     required this.createdAt,
     required this.updatedAt,
     this.retryCount = 0,
@@ -40,11 +41,19 @@ class VideoUploadItem {
   final double progress;
   final String? youtubeVideoId;
   final String? sessionUri;
+  final String? privacyStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
   final int retryCount;
   final String? errorMessage;
   final bool originalDeleted;
+
+  /// Finished and safe to drop from the list. A failed item that already has a
+  /// YouTube id stays: it is a video on the channel that never reached its
+  /// playlist, and the row is what prevents uploading it twice.
+  bool get clearable =>
+      status.isTerminal &&
+      !(status == UploadStatus.failed && youtubeVideoId != null);
 
   /// Uploaded successfully and the MediaStore original still exists.
   bool get originalDeletable =>

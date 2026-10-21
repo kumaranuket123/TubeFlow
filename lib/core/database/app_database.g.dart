@@ -496,6 +496,18 @@ class $AppSettingsRowsTable extends AppSettingsRows
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _visibilityMeta = const VerificationMeta(
+    'visibility',
+  );
+  @override
+  late final GeneratedColumn<String> visibility = GeneratedColumn<String>(
+    'visibility',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('private'),
+  );
   static const VerificationMeta _scanBaselineMeta = const VerificationMeta(
     'scanBaseline',
   );
@@ -528,6 +540,16 @@ class $AppSettingsRowsTable extends AppSettingsRows
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _quotaPausedUntilMsMeta =
+      const VerificationMeta('quotaPausedUntilMs');
+  @override
+  late final GeneratedColumn<int> quotaPausedUntilMs = GeneratedColumn<int>(
+    'quota_paused_until_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -538,9 +560,11 @@ class $AppSettingsRowsTable extends AppSettingsRows
     allow5g,
     chargingOnly,
     keepOriginal,
+    visibility,
     scanBaseline,
     runnerId,
     runnerLeaseUntilMs,
+    quotaPausedUntilMs,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -611,6 +635,12 @@ class $AppSettingsRowsTable extends AppSettingsRows
         ),
       );
     }
+    if (data.containsKey('visibility')) {
+      context.handle(
+        _visibilityMeta,
+        visibility.isAcceptableOrUnknown(data['visibility']!, _visibilityMeta),
+      );
+    }
     if (data.containsKey('scan_baseline')) {
       context.handle(
         _scanBaselineMeta,
@@ -632,6 +662,15 @@ class $AppSettingsRowsTable extends AppSettingsRows
         runnerLeaseUntilMs.isAcceptableOrUnknown(
           data['runner_lease_until_ms']!,
           _runnerLeaseUntilMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('quota_paused_until_ms')) {
+      context.handle(
+        _quotaPausedUntilMsMeta,
+        quotaPausedUntilMs.isAcceptableOrUnknown(
+          data['quota_paused_until_ms']!,
+          _quotaPausedUntilMsMeta,
         ),
       );
     }
@@ -676,6 +715,10 @@ class $AppSettingsRowsTable extends AppSettingsRows
         DriftSqlType.bool,
         data['${effectivePrefix}keep_original'],
       )!,
+      visibility: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visibility'],
+      )!,
       scanBaseline: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}scan_baseline'],
@@ -687,6 +730,10 @@ class $AppSettingsRowsTable extends AppSettingsRows
       runnerLeaseUntilMs: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}runner_lease_until_ms'],
+      ),
+      quotaPausedUntilMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}quota_paused_until_ms'],
       ),
     );
   }
@@ -709,6 +756,9 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   final bool chargingOnly;
   final bool keepOriginal;
 
+  /// YouTube privacyStatus for new uploads: `private` or `unlisted`.
+  final String visibility;
+
   /// First time scanning was used; only videos added after (baseline - 24h)
   /// are eligible, so the existing gallery is never bulk-queued.
   final DateTime? scanBaseline;
@@ -716,6 +766,10 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   /// Cross-isolate upload-runner lease (see RunnerLease). Epoch millis.
   final String? runnerId;
   final int? runnerLeaseUntilMs;
+
+  /// Uploads are paused until this time (YouTube quota exhausted). Epoch
+  /// millis; shared by every engine through the DB.
+  final int? quotaPausedUntilMs;
   const AppSettingsRow({
     required this.id,
     this.selectedPlaylistId,
@@ -725,9 +779,11 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     required this.allow5g,
     required this.chargingOnly,
     required this.keepOriginal,
+    required this.visibility,
     this.scanBaseline,
     this.runnerId,
     this.runnerLeaseUntilMs,
+    this.quotaPausedUntilMs,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -744,6 +800,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     map['allow5g'] = Variable<bool>(allow5g);
     map['charging_only'] = Variable<bool>(chargingOnly);
     map['keep_original'] = Variable<bool>(keepOriginal);
+    map['visibility'] = Variable<String>(visibility);
     if (!nullToAbsent || scanBaseline != null) {
       map['scan_baseline'] = Variable<DateTime>(scanBaseline);
     }
@@ -752,6 +809,9 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     }
     if (!nullToAbsent || runnerLeaseUntilMs != null) {
       map['runner_lease_until_ms'] = Variable<int>(runnerLeaseUntilMs);
+    }
+    if (!nullToAbsent || quotaPausedUntilMs != null) {
+      map['quota_paused_until_ms'] = Variable<int>(quotaPausedUntilMs);
     }
     return map;
   }
@@ -770,6 +830,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       allow5g: Value(allow5g),
       chargingOnly: Value(chargingOnly),
       keepOriginal: Value(keepOriginal),
+      visibility: Value(visibility),
       scanBaseline: scanBaseline == null && nullToAbsent
           ? const Value.absent()
           : Value(scanBaseline),
@@ -779,6 +840,9 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       runnerLeaseUntilMs: runnerLeaseUntilMs == null && nullToAbsent
           ? const Value.absent()
           : Value(runnerLeaseUntilMs),
+      quotaPausedUntilMs: quotaPausedUntilMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(quotaPausedUntilMs),
     );
   }
 
@@ -800,9 +864,11 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       allow5g: serializer.fromJson<bool>(json['allow5g']),
       chargingOnly: serializer.fromJson<bool>(json['chargingOnly']),
       keepOriginal: serializer.fromJson<bool>(json['keepOriginal']),
+      visibility: serializer.fromJson<String>(json['visibility']),
       scanBaseline: serializer.fromJson<DateTime?>(json['scanBaseline']),
       runnerId: serializer.fromJson<String?>(json['runnerId']),
       runnerLeaseUntilMs: serializer.fromJson<int?>(json['runnerLeaseUntilMs']),
+      quotaPausedUntilMs: serializer.fromJson<int?>(json['quotaPausedUntilMs']),
     );
   }
   @override
@@ -819,9 +885,11 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       'allow5g': serializer.toJson<bool>(allow5g),
       'chargingOnly': serializer.toJson<bool>(chargingOnly),
       'keepOriginal': serializer.toJson<bool>(keepOriginal),
+      'visibility': serializer.toJson<String>(visibility),
       'scanBaseline': serializer.toJson<DateTime?>(scanBaseline),
       'runnerId': serializer.toJson<String?>(runnerId),
       'runnerLeaseUntilMs': serializer.toJson<int?>(runnerLeaseUntilMs),
+      'quotaPausedUntilMs': serializer.toJson<int?>(quotaPausedUntilMs),
     };
   }
 
@@ -834,9 +902,11 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     bool? allow5g,
     bool? chargingOnly,
     bool? keepOriginal,
+    String? visibility,
     Value<DateTime?> scanBaseline = const Value.absent(),
     Value<String?> runnerId = const Value.absent(),
     Value<int?> runnerLeaseUntilMs = const Value.absent(),
+    Value<int?> quotaPausedUntilMs = const Value.absent(),
   }) => AppSettingsRow(
     id: id ?? this.id,
     selectedPlaylistId: selectedPlaylistId.present
@@ -850,11 +920,15 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     allow5g: allow5g ?? this.allow5g,
     chargingOnly: chargingOnly ?? this.chargingOnly,
     keepOriginal: keepOriginal ?? this.keepOriginal,
+    visibility: visibility ?? this.visibility,
     scanBaseline: scanBaseline.present ? scanBaseline.value : this.scanBaseline,
     runnerId: runnerId.present ? runnerId.value : this.runnerId,
     runnerLeaseUntilMs: runnerLeaseUntilMs.present
         ? runnerLeaseUntilMs.value
         : this.runnerLeaseUntilMs,
+    quotaPausedUntilMs: quotaPausedUntilMs.present
+        ? quotaPausedUntilMs.value
+        : this.quotaPausedUntilMs,
   );
   AppSettingsRow copyWithCompanion(AppSettingsRowsCompanion data) {
     return AppSettingsRow(
@@ -876,6 +950,9 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       keepOriginal: data.keepOriginal.present
           ? data.keepOriginal.value
           : this.keepOriginal,
+      visibility: data.visibility.present
+          ? data.visibility.value
+          : this.visibility,
       scanBaseline: data.scanBaseline.present
           ? data.scanBaseline.value
           : this.scanBaseline,
@@ -883,6 +960,9 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       runnerLeaseUntilMs: data.runnerLeaseUntilMs.present
           ? data.runnerLeaseUntilMs.value
           : this.runnerLeaseUntilMs,
+      quotaPausedUntilMs: data.quotaPausedUntilMs.present
+          ? data.quotaPausedUntilMs.value
+          : this.quotaPausedUntilMs,
     );
   }
 
@@ -897,9 +977,11 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
           ..write('allow5g: $allow5g, ')
           ..write('chargingOnly: $chargingOnly, ')
           ..write('keepOriginal: $keepOriginal, ')
+          ..write('visibility: $visibility, ')
           ..write('scanBaseline: $scanBaseline, ')
           ..write('runnerId: $runnerId, ')
-          ..write('runnerLeaseUntilMs: $runnerLeaseUntilMs')
+          ..write('runnerLeaseUntilMs: $runnerLeaseUntilMs, ')
+          ..write('quotaPausedUntilMs: $quotaPausedUntilMs')
           ..write(')'))
         .toString();
   }
@@ -914,9 +996,11 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     allow5g,
     chargingOnly,
     keepOriginal,
+    visibility,
     scanBaseline,
     runnerId,
     runnerLeaseUntilMs,
+    quotaPausedUntilMs,
   );
   @override
   bool operator ==(Object other) =>
@@ -930,9 +1014,11 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
           other.allow5g == this.allow5g &&
           other.chargingOnly == this.chargingOnly &&
           other.keepOriginal == this.keepOriginal &&
+          other.visibility == this.visibility &&
           other.scanBaseline == this.scanBaseline &&
           other.runnerId == this.runnerId &&
-          other.runnerLeaseUntilMs == this.runnerLeaseUntilMs);
+          other.runnerLeaseUntilMs == this.runnerLeaseUntilMs &&
+          other.quotaPausedUntilMs == this.quotaPausedUntilMs);
 }
 
 class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
@@ -944,9 +1030,11 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
   final Value<bool> allow5g;
   final Value<bool> chargingOnly;
   final Value<bool> keepOriginal;
+  final Value<String> visibility;
   final Value<DateTime?> scanBaseline;
   final Value<String?> runnerId;
   final Value<int?> runnerLeaseUntilMs;
+  final Value<int?> quotaPausedUntilMs;
   const AppSettingsRowsCompanion({
     this.id = const Value.absent(),
     this.selectedPlaylistId = const Value.absent(),
@@ -956,9 +1044,11 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     this.allow5g = const Value.absent(),
     this.chargingOnly = const Value.absent(),
     this.keepOriginal = const Value.absent(),
+    this.visibility = const Value.absent(),
     this.scanBaseline = const Value.absent(),
     this.runnerId = const Value.absent(),
     this.runnerLeaseUntilMs = const Value.absent(),
+    this.quotaPausedUntilMs = const Value.absent(),
   });
   AppSettingsRowsCompanion.insert({
     this.id = const Value.absent(),
@@ -969,9 +1059,11 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     this.allow5g = const Value.absent(),
     this.chargingOnly = const Value.absent(),
     this.keepOriginal = const Value.absent(),
+    this.visibility = const Value.absent(),
     this.scanBaseline = const Value.absent(),
     this.runnerId = const Value.absent(),
     this.runnerLeaseUntilMs = const Value.absent(),
+    this.quotaPausedUntilMs = const Value.absent(),
   });
   static Insertable<AppSettingsRow> custom({
     Expression<int>? id,
@@ -982,9 +1074,11 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     Expression<bool>? allow5g,
     Expression<bool>? chargingOnly,
     Expression<bool>? keepOriginal,
+    Expression<String>? visibility,
     Expression<DateTime>? scanBaseline,
     Expression<String>? runnerId,
     Expression<int>? runnerLeaseUntilMs,
+    Expression<int>? quotaPausedUntilMs,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -997,10 +1091,13 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
       if (allow5g != null) 'allow5g': allow5g,
       if (chargingOnly != null) 'charging_only': chargingOnly,
       if (keepOriginal != null) 'keep_original': keepOriginal,
+      if (visibility != null) 'visibility': visibility,
       if (scanBaseline != null) 'scan_baseline': scanBaseline,
       if (runnerId != null) 'runner_id': runnerId,
       if (runnerLeaseUntilMs != null)
         'runner_lease_until_ms': runnerLeaseUntilMs,
+      if (quotaPausedUntilMs != null)
+        'quota_paused_until_ms': quotaPausedUntilMs,
     });
   }
 
@@ -1013,9 +1110,11 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     Value<bool>? allow5g,
     Value<bool>? chargingOnly,
     Value<bool>? keepOriginal,
+    Value<String>? visibility,
     Value<DateTime?>? scanBaseline,
     Value<String?>? runnerId,
     Value<int?>? runnerLeaseUntilMs,
+    Value<int?>? quotaPausedUntilMs,
   }) {
     return AppSettingsRowsCompanion(
       id: id ?? this.id,
@@ -1027,9 +1126,11 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
       allow5g: allow5g ?? this.allow5g,
       chargingOnly: chargingOnly ?? this.chargingOnly,
       keepOriginal: keepOriginal ?? this.keepOriginal,
+      visibility: visibility ?? this.visibility,
       scanBaseline: scanBaseline ?? this.scanBaseline,
       runnerId: runnerId ?? this.runnerId,
       runnerLeaseUntilMs: runnerLeaseUntilMs ?? this.runnerLeaseUntilMs,
+      quotaPausedUntilMs: quotaPausedUntilMs ?? this.quotaPausedUntilMs,
     );
   }
 
@@ -1062,6 +1163,9 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     if (keepOriginal.present) {
       map['keep_original'] = Variable<bool>(keepOriginal.value);
     }
+    if (visibility.present) {
+      map['visibility'] = Variable<String>(visibility.value);
+    }
     if (scanBaseline.present) {
       map['scan_baseline'] = Variable<DateTime>(scanBaseline.value);
     }
@@ -1070,6 +1174,9 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
     }
     if (runnerLeaseUntilMs.present) {
       map['runner_lease_until_ms'] = Variable<int>(runnerLeaseUntilMs.value);
+    }
+    if (quotaPausedUntilMs.present) {
+      map['quota_paused_until_ms'] = Variable<int>(quotaPausedUntilMs.value);
     }
     return map;
   }
@@ -1085,9 +1192,11 @@ class AppSettingsRowsCompanion extends UpdateCompanion<AppSettingsRow> {
           ..write('allow5g: $allow5g, ')
           ..write('chargingOnly: $chargingOnly, ')
           ..write('keepOriginal: $keepOriginal, ')
+          ..write('visibility: $visibility, ')
           ..write('scanBaseline: $scanBaseline, ')
           ..write('runnerId: $runnerId, ')
-          ..write('runnerLeaseUntilMs: $runnerLeaseUntilMs')
+          ..write('runnerLeaseUntilMs: $runnerLeaseUntilMs, ')
+          ..write('quotaPausedUntilMs: $quotaPausedUntilMs')
           ..write(')'))
         .toString();
   }
@@ -1250,6 +1359,17 @@ class $UploadQueueTable extends UploadQueue
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _privacyStatusMeta = const VerificationMeta(
+    'privacyStatus',
+  );
+  @override
+  late final GeneratedColumn<String> privacyStatus = GeneratedColumn<String>(
+    'privacy_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1326,6 +1446,7 @@ class $UploadQueueTable extends UploadQueue
     progress,
     youtubeVideoId,
     sessionUri,
+    privacyStatus,
     createdAt,
     updatedAt,
     retryCount,
@@ -1446,6 +1567,15 @@ class $UploadQueueTable extends UploadQueue
         sessionUri.isAcceptableOrUnknown(data['session_uri']!, _sessionUriMeta),
       );
     }
+    if (data.containsKey('privacy_status')) {
+      context.handle(
+        _privacyStatusMeta,
+        privacyStatus.isAcceptableOrUnknown(
+          data['privacy_status']!,
+          _privacyStatusMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1551,6 +1681,10 @@ class $UploadQueueTable extends UploadQueue
         DriftSqlType.string,
         data['${effectivePrefix}session_uri'],
       ),
+      privacyStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}privacy_status'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1595,6 +1729,9 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
   final double progress;
   final String? youtubeVideoId;
   final String? sessionUri;
+
+  /// Visibility the resumable session was created with (fixed for its life).
+  final String? privacyStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
   final int retryCount;
@@ -1617,6 +1754,7 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
     required this.progress,
     this.youtubeVideoId,
     this.sessionUri,
+    this.privacyStatus,
     required this.createdAt,
     required this.updatedAt,
     required this.retryCount,
@@ -1651,6 +1789,9 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
     }
     if (!nullToAbsent || sessionUri != null) {
       map['session_uri'] = Variable<String>(sessionUri);
+    }
+    if (!nullToAbsent || privacyStatus != null) {
+      map['privacy_status'] = Variable<String>(privacyStatus);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1690,6 +1831,9 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
       sessionUri: sessionUri == null && nullToAbsent
           ? const Value.absent()
           : Value(sessionUri),
+      privacyStatus: privacyStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(privacyStatus),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       retryCount: Value(retryCount),
@@ -1720,6 +1864,7 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
       progress: serializer.fromJson<double>(json['progress']),
       youtubeVideoId: serializer.fromJson<String?>(json['youtubeVideoId']),
       sessionUri: serializer.fromJson<String?>(json['sessionUri']),
+      privacyStatus: serializer.fromJson<String?>(json['privacyStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       retryCount: serializer.fromJson<int>(json['retryCount']),
@@ -1745,6 +1890,7 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
       'progress': serializer.toJson<double>(progress),
       'youtubeVideoId': serializer.toJson<String?>(youtubeVideoId),
       'sessionUri': serializer.toJson<String?>(sessionUri),
+      'privacyStatus': serializer.toJson<String?>(privacyStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'retryCount': serializer.toJson<int>(retryCount),
@@ -1768,6 +1914,7 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
     double? progress,
     Value<String?> youtubeVideoId = const Value.absent(),
     Value<String?> sessionUri = const Value.absent(),
+    Value<String?> privacyStatus = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     int? retryCount,
@@ -1790,6 +1937,9 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
         ? youtubeVideoId.value
         : this.youtubeVideoId,
     sessionUri: sessionUri.present ? sessionUri.value : this.sessionUri,
+    privacyStatus: privacyStatus.present
+        ? privacyStatus.value
+        : this.privacyStatus,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     retryCount: retryCount ?? this.retryCount,
@@ -1824,6 +1974,9 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
       sessionUri: data.sessionUri.present
           ? data.sessionUri.value
           : this.sessionUri,
+      privacyStatus: data.privacyStatus.present
+          ? data.privacyStatus.value
+          : this.privacyStatus,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       retryCount: data.retryCount.present
@@ -1855,6 +2008,7 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
           ..write('progress: $progress, ')
           ..write('youtubeVideoId: $youtubeVideoId, ')
           ..write('sessionUri: $sessionUri, ')
+          ..write('privacyStatus: $privacyStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('retryCount: $retryCount, ')
@@ -1880,6 +2034,7 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
     progress,
     youtubeVideoId,
     sessionUri,
+    privacyStatus,
     createdAt,
     updatedAt,
     retryCount,
@@ -1904,6 +2059,7 @@ class UploadQueueRow extends DataClass implements Insertable<UploadQueueRow> {
           other.progress == this.progress &&
           other.youtubeVideoId == this.youtubeVideoId &&
           other.sessionUri == this.sessionUri &&
+          other.privacyStatus == this.privacyStatus &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.retryCount == this.retryCount &&
@@ -1926,6 +2082,7 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
   final Value<double> progress;
   final Value<String?> youtubeVideoId;
   final Value<String?> sessionUri;
+  final Value<String?> privacyStatus;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> retryCount;
@@ -1947,6 +2104,7 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
     this.progress = const Value.absent(),
     this.youtubeVideoId = const Value.absent(),
     this.sessionUri = const Value.absent(),
+    this.privacyStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.retryCount = const Value.absent(),
@@ -1969,6 +2127,7 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
     this.progress = const Value.absent(),
     this.youtubeVideoId = const Value.absent(),
     this.sessionUri = const Value.absent(),
+    this.privacyStatus = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.retryCount = const Value.absent(),
@@ -1998,6 +2157,7 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
     Expression<double>? progress,
     Expression<String>? youtubeVideoId,
     Expression<String>? sessionUri,
+    Expression<String>? privacyStatus,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? retryCount,
@@ -2020,6 +2180,7 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
       if (progress != null) 'progress': progress,
       if (youtubeVideoId != null) 'youtube_video_id': youtubeVideoId,
       if (sessionUri != null) 'session_uri': sessionUri,
+      if (privacyStatus != null) 'privacy_status': privacyStatus,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (retryCount != null) 'retry_count': retryCount,
@@ -2044,6 +2205,7 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
     Value<double>? progress,
     Value<String?>? youtubeVideoId,
     Value<String?>? sessionUri,
+    Value<String?>? privacyStatus,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? retryCount,
@@ -2066,6 +2228,7 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
       progress: progress ?? this.progress,
       youtubeVideoId: youtubeVideoId ?? this.youtubeVideoId,
       sessionUri: sessionUri ?? this.sessionUri,
+      privacyStatus: privacyStatus ?? this.privacyStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       retryCount: retryCount ?? this.retryCount,
@@ -2120,6 +2283,9 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
     if (sessionUri.present) {
       map['session_uri'] = Variable<String>(sessionUri.value);
     }
+    if (privacyStatus.present) {
+      map['privacy_status'] = Variable<String>(privacyStatus.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2158,11 +2324,218 @@ class UploadQueueCompanion extends UpdateCompanion<UploadQueueRow> {
           ..write('progress: $progress, ')
           ..write('youtubeVideoId: $youtubeVideoId, ')
           ..write('sessionUri: $sessionUri, ')
+          ..write('privacyStatus: $privacyStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('retryCount: $retryCount, ')
           ..write('errorMessage: $errorMessage, ')
           ..write('originalDeleted: $originalDeleted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $QuotaUsageTable extends QuotaUsage
+    with TableInfo<$QuotaUsageTable, QuotaUsageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $QuotaUsageTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dayKeyMeta = const VerificationMeta('dayKey');
+  @override
+  late final GeneratedColumn<String> dayKey = GeneratedColumn<String>(
+    'day_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unitsMeta = const VerificationMeta('units');
+  @override
+  late final GeneratedColumn<int> units = GeneratedColumn<int>(
+    'units',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [dayKey, units];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'quota_usage';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<QuotaUsageRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('day_key')) {
+      context.handle(
+        _dayKeyMeta,
+        dayKey.isAcceptableOrUnknown(data['day_key']!, _dayKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayKeyMeta);
+    }
+    if (data.containsKey('units')) {
+      context.handle(
+        _unitsMeta,
+        units.isAcceptableOrUnknown(data['units']!, _unitsMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {dayKey};
+  @override
+  QuotaUsageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return QuotaUsageRow(
+      dayKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day_key'],
+      )!,
+      units: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}units'],
+      )!,
+    );
+  }
+
+  @override
+  $QuotaUsageTable createAlias(String alias) {
+    return $QuotaUsageTable(attachedDatabase, alias);
+  }
+}
+
+class QuotaUsageRow extends DataClass implements Insertable<QuotaUsageRow> {
+  final String dayKey;
+  final int units;
+  const QuotaUsageRow({required this.dayKey, required this.units});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['day_key'] = Variable<String>(dayKey);
+    map['units'] = Variable<int>(units);
+    return map;
+  }
+
+  QuotaUsageCompanion toCompanion(bool nullToAbsent) {
+    return QuotaUsageCompanion(dayKey: Value(dayKey), units: Value(units));
+  }
+
+  factory QuotaUsageRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return QuotaUsageRow(
+      dayKey: serializer.fromJson<String>(json['dayKey']),
+      units: serializer.fromJson<int>(json['units']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'dayKey': serializer.toJson<String>(dayKey),
+      'units': serializer.toJson<int>(units),
+    };
+  }
+
+  QuotaUsageRow copyWith({String? dayKey, int? units}) =>
+      QuotaUsageRow(dayKey: dayKey ?? this.dayKey, units: units ?? this.units);
+  QuotaUsageRow copyWithCompanion(QuotaUsageCompanion data) {
+    return QuotaUsageRow(
+      dayKey: data.dayKey.present ? data.dayKey.value : this.dayKey,
+      units: data.units.present ? data.units.value : this.units,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuotaUsageRow(')
+          ..write('dayKey: $dayKey, ')
+          ..write('units: $units')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(dayKey, units);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is QuotaUsageRow &&
+          other.dayKey == this.dayKey &&
+          other.units == this.units);
+}
+
+class QuotaUsageCompanion extends UpdateCompanion<QuotaUsageRow> {
+  final Value<String> dayKey;
+  final Value<int> units;
+  final Value<int> rowid;
+  const QuotaUsageCompanion({
+    this.dayKey = const Value.absent(),
+    this.units = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  QuotaUsageCompanion.insert({
+    required String dayKey,
+    this.units = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : dayKey = Value(dayKey);
+  static Insertable<QuotaUsageRow> custom({
+    Expression<String>? dayKey,
+    Expression<int>? units,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (dayKey != null) 'day_key': dayKey,
+      if (units != null) 'units': units,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  QuotaUsageCompanion copyWith({
+    Value<String>? dayKey,
+    Value<int>? units,
+    Value<int>? rowid,
+  }) {
+    return QuotaUsageCompanion(
+      dayKey: dayKey ?? this.dayKey,
+      units: units ?? this.units,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (dayKey.present) {
+      map['day_key'] = Variable<String>(dayKey.value);
+    }
+    if (units.present) {
+      map['units'] = Variable<int>(units.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuotaUsageCompanion(')
+          ..write('dayKey: $dayKey, ')
+          ..write('units: $units, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2179,6 +2552,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $UploadQueueTable uploadQueue = $UploadQueueTable(this);
+  late final $QuotaUsageTable quotaUsage = $QuotaUsageTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2187,6 +2561,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     youtubeAccounts,
     appSettingsRows,
     uploadQueue,
+    quotaUsage,
   ];
 }
 
@@ -2415,9 +2790,11 @@ typedef $$AppSettingsRowsTableCreateCompanionBuilder =
       Value<bool> allow5g,
       Value<bool> chargingOnly,
       Value<bool> keepOriginal,
+      Value<String> visibility,
       Value<DateTime?> scanBaseline,
       Value<String?> runnerId,
       Value<int?> runnerLeaseUntilMs,
+      Value<int?> quotaPausedUntilMs,
     });
 typedef $$AppSettingsRowsTableUpdateCompanionBuilder =
     AppSettingsRowsCompanion Function({
@@ -2429,9 +2806,11 @@ typedef $$AppSettingsRowsTableUpdateCompanionBuilder =
       Value<bool> allow5g,
       Value<bool> chargingOnly,
       Value<bool> keepOriginal,
+      Value<String> visibility,
       Value<DateTime?> scanBaseline,
       Value<String?> runnerId,
       Value<int?> runnerLeaseUntilMs,
+      Value<int?> quotaPausedUntilMs,
     });
 
 class $$AppSettingsRowsTableFilterComposer
@@ -2483,6 +2862,11 @@ class $$AppSettingsRowsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get visibility => $composableBuilder(
+    column: $table.visibility,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get scanBaseline => $composableBuilder(
     column: $table.scanBaseline,
     builder: (column) => ColumnFilters(column),
@@ -2495,6 +2879,11 @@ class $$AppSettingsRowsTableFilterComposer
 
   ColumnFilters<int> get runnerLeaseUntilMs => $composableBuilder(
     column: $table.runnerLeaseUntilMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get quotaPausedUntilMs => $composableBuilder(
+    column: $table.quotaPausedUntilMs,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2548,6 +2937,11 @@ class $$AppSettingsRowsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get visibility => $composableBuilder(
+    column: $table.visibility,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get scanBaseline => $composableBuilder(
     column: $table.scanBaseline,
     builder: (column) => ColumnOrderings(column),
@@ -2560,6 +2954,11 @@ class $$AppSettingsRowsTableOrderingComposer
 
   ColumnOrderings<int> get runnerLeaseUntilMs => $composableBuilder(
     column: $table.runnerLeaseUntilMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get quotaPausedUntilMs => $composableBuilder(
+    column: $table.quotaPausedUntilMs,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -2607,6 +3006,11 @@ class $$AppSettingsRowsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get visibility => $composableBuilder(
+    column: $table.visibility,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get scanBaseline => $composableBuilder(
     column: $table.scanBaseline,
     builder: (column) => column,
@@ -2617,6 +3021,11 @@ class $$AppSettingsRowsTableAnnotationComposer
 
   GeneratedColumn<int> get runnerLeaseUntilMs => $composableBuilder(
     column: $table.runnerLeaseUntilMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get quotaPausedUntilMs => $composableBuilder(
+    column: $table.quotaPausedUntilMs,
     builder: (column) => column,
   );
 }
@@ -2666,9 +3075,11 @@ class $$AppSettingsRowsTableTableManager
                 Value<bool> allow5g = const Value.absent(),
                 Value<bool> chargingOnly = const Value.absent(),
                 Value<bool> keepOriginal = const Value.absent(),
+                Value<String> visibility = const Value.absent(),
                 Value<DateTime?> scanBaseline = const Value.absent(),
                 Value<String?> runnerId = const Value.absent(),
                 Value<int?> runnerLeaseUntilMs = const Value.absent(),
+                Value<int?> quotaPausedUntilMs = const Value.absent(),
               }) => AppSettingsRowsCompanion(
                 id: id,
                 selectedPlaylistId: selectedPlaylistId,
@@ -2678,9 +3089,11 @@ class $$AppSettingsRowsTableTableManager
                 allow5g: allow5g,
                 chargingOnly: chargingOnly,
                 keepOriginal: keepOriginal,
+                visibility: visibility,
                 scanBaseline: scanBaseline,
                 runnerId: runnerId,
                 runnerLeaseUntilMs: runnerLeaseUntilMs,
+                quotaPausedUntilMs: quotaPausedUntilMs,
               ),
           createCompanionCallback:
               ({
@@ -2692,9 +3105,11 @@ class $$AppSettingsRowsTableTableManager
                 Value<bool> allow5g = const Value.absent(),
                 Value<bool> chargingOnly = const Value.absent(),
                 Value<bool> keepOriginal = const Value.absent(),
+                Value<String> visibility = const Value.absent(),
                 Value<DateTime?> scanBaseline = const Value.absent(),
                 Value<String?> runnerId = const Value.absent(),
                 Value<int?> runnerLeaseUntilMs = const Value.absent(),
+                Value<int?> quotaPausedUntilMs = const Value.absent(),
               }) => AppSettingsRowsCompanion.insert(
                 id: id,
                 selectedPlaylistId: selectedPlaylistId,
@@ -2704,9 +3119,11 @@ class $$AppSettingsRowsTableTableManager
                 allow5g: allow5g,
                 chargingOnly: chargingOnly,
                 keepOriginal: keepOriginal,
+                visibility: visibility,
                 scanBaseline: scanBaseline,
                 runnerId: runnerId,
                 runnerLeaseUntilMs: runnerLeaseUntilMs,
+                quotaPausedUntilMs: quotaPausedUntilMs,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -2758,6 +3175,7 @@ typedef $$UploadQueueTableCreateCompanionBuilder =
       Value<double> progress,
       Value<String?> youtubeVideoId,
       Value<String?> sessionUri,
+      Value<String?> privacyStatus,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> retryCount,
@@ -2781,6 +3199,7 @@ typedef $$UploadQueueTableUpdateCompanionBuilder =
       Value<double> progress,
       Value<String?> youtubeVideoId,
       Value<String?> sessionUri,
+      Value<String?> privacyStatus,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> retryCount,
@@ -2865,6 +3284,11 @@ class $$UploadQueueTableFilterComposer
 
   ColumnFilters<String> get sessionUri => $composableBuilder(
     column: $table.sessionUri,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get privacyStatus => $composableBuilder(
+    column: $table.privacyStatus,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2973,6 +3397,11 @@ class $$UploadQueueTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get privacyStatus => $composableBuilder(
+    column: $table.privacyStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3062,6 +3491,11 @@ class $$UploadQueueTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get privacyStatus => $composableBuilder(
+    column: $table.privacyStatus,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -3129,6 +3563,7 @@ class $$UploadQueueTableTableManager
                 Value<double> progress = const Value.absent(),
                 Value<String?> youtubeVideoId = const Value.absent(),
                 Value<String?> sessionUri = const Value.absent(),
+                Value<String?> privacyStatus = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> retryCount = const Value.absent(),
@@ -3150,6 +3585,7 @@ class $$UploadQueueTableTableManager
                 progress: progress,
                 youtubeVideoId: youtubeVideoId,
                 sessionUri: sessionUri,
+                privacyStatus: privacyStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 retryCount: retryCount,
@@ -3173,6 +3609,7 @@ class $$UploadQueueTableTableManager
                 Value<double> progress = const Value.absent(),
                 Value<String?> youtubeVideoId = const Value.absent(),
                 Value<String?> sessionUri = const Value.absent(),
+                Value<String?> privacyStatus = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> retryCount = const Value.absent(),
@@ -3194,6 +3631,7 @@ class $$UploadQueueTableTableManager
                 progress: progress,
                 youtubeVideoId: youtubeVideoId,
                 sessionUri: sessionUri,
+                privacyStatus: privacyStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 retryCount: retryCount,
@@ -3235,6 +3673,158 @@ typedef $$UploadQueueTableProcessedTableManager =
       UploadQueueRow,
       PrefetchHooks Function()
     >;
+typedef $$QuotaUsageTableCreateCompanionBuilder =
+    QuotaUsageCompanion Function({
+      required String dayKey,
+      Value<int> units,
+      Value<int> rowid,
+    });
+typedef $$QuotaUsageTableUpdateCompanionBuilder =
+    QuotaUsageCompanion Function({
+      Value<String> dayKey,
+      Value<int> units,
+      Value<int> rowid,
+    });
+
+class $$QuotaUsageTableFilterComposer
+    extends Composer<_$AppDatabase, $QuotaUsageTable> {
+  $$QuotaUsageTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get dayKey => $composableBuilder(
+    column: $table.dayKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get units => $composableBuilder(
+    column: $table.units,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$QuotaUsageTableOrderingComposer
+    extends Composer<_$AppDatabase, $QuotaUsageTable> {
+  $$QuotaUsageTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get dayKey => $composableBuilder(
+    column: $table.dayKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get units => $composableBuilder(
+    column: $table.units,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$QuotaUsageTableAnnotationComposer
+    extends Composer<_$AppDatabase, $QuotaUsageTable> {
+  $$QuotaUsageTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get dayKey =>
+      $composableBuilder(column: $table.dayKey, builder: (column) => column);
+
+  GeneratedColumn<int> get units =>
+      $composableBuilder(column: $table.units, builder: (column) => column);
+}
+
+class $$QuotaUsageTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $QuotaUsageTable,
+          QuotaUsageRow,
+          $$QuotaUsageTableFilterComposer,
+          $$QuotaUsageTableOrderingComposer,
+          $$QuotaUsageTableAnnotationComposer,
+          $$QuotaUsageTableCreateCompanionBuilder,
+          $$QuotaUsageTableUpdateCompanionBuilder,
+          (
+            QuotaUsageRow,
+            BaseReferences<_$AppDatabase, $QuotaUsageTable, QuotaUsageRow>,
+          ),
+          QuotaUsageRow,
+          PrefetchHooks Function()
+        > {
+  $$QuotaUsageTableTableManager(_$AppDatabase db, $QuotaUsageTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$QuotaUsageTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$QuotaUsageTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$QuotaUsageTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> dayKey = const Value.absent(),
+                Value<int> units = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => QuotaUsageCompanion(
+                dayKey: dayKey,
+                units: units,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String dayKey,
+                Value<int> units = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => QuotaUsageCompanion.insert(
+                dayKey: dayKey,
+                units: units,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$QuotaUsageTable, QuotaUsageRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $QuotaUsageTable,
+                    QuotaUsageRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$QuotaUsageTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $QuotaUsageTable,
+      QuotaUsageRow,
+      $$QuotaUsageTableFilterComposer,
+      $$QuotaUsageTableOrderingComposer,
+      $$QuotaUsageTableAnnotationComposer,
+      $$QuotaUsageTableCreateCompanionBuilder,
+      $$QuotaUsageTableUpdateCompanionBuilder,
+      (
+        QuotaUsageRow,
+        BaseReferences<_$AppDatabase, $QuotaUsageTable, QuotaUsageRow>,
+      ),
+      QuotaUsageRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3245,4 +3835,6 @@ class $AppDatabaseManager {
       $$AppSettingsRowsTableTableManager(_db, _db.appSettingsRows);
   $$UploadQueueTableTableManager get uploadQueue =>
       $$UploadQueueTableTableManager(_db, _db.uploadQueue);
+  $$QuotaUsageTableTableManager get quotaUsage =>
+      $$QuotaUsageTableTableManager(_db, _db.quotaUsage);
 }

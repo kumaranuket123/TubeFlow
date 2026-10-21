@@ -20,6 +20,13 @@ class YoutubeApiException implements Exception {
   String toString() => 'YoutubeApiException($statusCode): $message';
 }
 
+/// The daily YouTube API quota (or the channel's daily upload limit) is used
+/// up. Unlike other API errors this is not the video's fault: the queue
+/// pauses until the quota resets instead of failing items.
+class QuotaExceededException extends YoutubeApiException {
+  const QuotaExceededException(super.message, {super.statusCode});
+}
+
 /// A recoverable failure (network loss, 5xx) after in-request retries were
 /// exhausted. The upload keeps its session and is retried later.
 class TransientUploadException implements Exception {

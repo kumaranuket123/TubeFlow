@@ -9,6 +9,7 @@ import '../../data/datasources/youtube_playlist_remote_datasource.dart';
 import '../../data/services/youtube_playlist_service_impl.dart';
 import '../../domain/entities/auth_state.dart';
 import '../../domain/entities/youtube_playlist.dart';
+import '../../domain/entities/youtube_playlist_video.dart';
 import '../../domain/playlist_provisioner.dart';
 import '../../domain/services/youtube_playlist_service.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
@@ -19,13 +20,14 @@ import '../../domain/usecases/get_valid_access_token.dart';
 
 final youtubeAuthAppAuthDataSourceProvider =
     Provider<YoutubeAuthAppAuthDataSource>((ref) {
-  return YoutubeAuthAppAuthDataSource(ref.watch(flutterAppAuthProvider));
-});
+      return YoutubeAuthAppAuthDataSource(ref.watch(flutterAppAuthProvider));
+    });
 
-final youtubeApiRemoteDataSourceProvider =
-    Provider<YoutubeApiRemoteDataSource>((ref) {
-  return YoutubeApiRemoteDataSource(ref.watch(dioProvider));
-});
+final youtubeApiRemoteDataSourceProvider = Provider<YoutubeApiRemoteDataSource>(
+  (ref) {
+    return YoutubeApiRemoteDataSource(ref.watch(dioProvider));
+  },
+);
 
 final youtubeAuthRepositoryProvider = Provider<YoutubeAuthRepository>((ref) {
   return YoutubeAuthRepositoryImpl(
@@ -53,8 +55,8 @@ final getValidAccessTokenProvider = Provider<GetValidAccessToken>((ref) {
 
 final youtubeAuthControllerProvider =
     NotifierProvider<YoutubeAuthController, AuthState>(
-  YoutubeAuthController.new,
-);
+      YoutubeAuthController.new,
+    );
 
 class YoutubeAuthController extends Notifier<AuthState> {
   @override
@@ -109,8 +111,18 @@ final playlistProvisionerProvider = Provider<PlaylistProvisioner>((ref) {
 
 /// The channel's playlists. A channel with none gets a private default one
 /// created (and selected) automatically.
-final playlistsProvider = FutureProvider.autoDispose<List<YoutubePlaylist>>((ref) async {
+final playlistsProvider = FutureProvider.autoDispose<List<YoutubePlaylist>>((
+  ref,
+) async {
   final list = await ref.watch(youtubePlaylistServiceProvider).getMyPlaylists();
   if (list.isNotEmpty) return list;
   return [await ref.read(playlistProvisionerProvider).createDefault()];
 });
+
+/// Videos of one playlist, with each video's current visibility.
+final playlistVideosProvider = FutureProvider.autoDispose
+    .family<List<YoutubePlaylistVideo>, String>((ref, playlistId) {
+      return ref
+          .watch(youtubePlaylistServiceProvider)
+          .getPlaylistVideos(playlistId);
+    });

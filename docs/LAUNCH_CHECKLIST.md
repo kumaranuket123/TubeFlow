@@ -32,7 +32,8 @@ the keystore. Builds fail without it.
 
 ### Verification form: scope justification (paste/adapt)
 > TubeFlow uploads videos recorded on the user's phone to the user's own YouTube
-> channel as private videos and adds them to a playlist the user selects. The
+> channel as private (or, if the user chooses, unlisted) videos, lets the user switch
+> videos in a playlist between private and unlisted, and adds them to a playlist the user selects. The
 > `youtube` scope is required because `videos.insert`, `playlists.insert`,
 > `playlists.list` and `playlistItems.insert` all need it; no narrower scope
 > covers uploading together with playlist management. Data is used only for
@@ -43,7 +44,7 @@ the keystore. Builds fail without it.
 1. The consent screen, with the client ID visible in the URL.
 2. Sign in and grant access.
 3. Pick a playlist / create a new one.
-4. Upload a video, then show it private on YouTube Studio and in the playlist.
+4. Upload a video, then show it private (or unlisted, if chosen) on YouTube Studio and in the playlist. Also show the playlist's "Manage video visibility" screen switching selected videos between private and unlisted.
 5. Disconnect in the app.
 
 ## 4. YouTube API quota

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../../../core/error/exceptions.dart';
+import '../../../core/quota/quota_tracker.dart';
 import '../../settings/domain/settings_repository.dart';
 import 'entities/upload_status.dart';
 import 'entities/video_upload_item.dart';
@@ -16,7 +17,7 @@ import 'youtube_uploader.dart';
 ///
 /// Exactly one item is processed at a time ([_maxConcurrent] = 1); raising
 /// that limit and tracking a set of active ids is all concurrency needs.
-/// Pipeline per item: PREPARING → UPLOADING → PROCESSING (verify private) →
+/// Pipeline per item: PREPARING → UPLOADING → PROCESSING (verify not public) →
 /// ADDING_TO_PLAYLIST → COMPLETED. If the YouTube id is already stored the
 /// upload is skipped, so a playlist failure never re-uploads the video.
 class UploadManager {
@@ -31,13 +32,15 @@ class UploadManager {
     UploadConditionChecker? conditions,
     Future<String?> Function()? ensurePlaylist,
     this.conditionPollInterval = const Duration(seconds: 5),
+    DateTime Function()? clock,
   })  : _queue = queue,
         _settings = settings,
         _uploader = uploader,
         _lease = lease,
         _conditions = conditions,
         _ensurePlaylist = ensurePlaylist,
-        _owner = owner;
+        _owner = owner,
+        _clock = clock ?? DateTime.now;
 
   static const _maxConcurrent = 1;
 
@@ -50,6 +53,10 @@ class UploadManager {
   final RunnerLease? _lease;
   final String _owner;
   final UploadConditionChecker? _conditions;
+  final DateTime Function() _clock;
+
+  /// Extra wait after the Pacific-midnight reset before trying again.
+  static const quotaResumeMargin = Duration(minutes: 2);
 
   /// Resolves a destination when none is selected (creates a private
   /// playlist if the channel has none). Null result = user must choose.
@@ -118,6 +125,15 @@ class UploadManager {
       // We are the only runner, so any in-flight row is stale (a killed run).
       await _queue.resetInterrupted();
       while (!_paused && _active.length < _maxConcurrent) {
+        // Quota exhausted: nothing can upload until the daily reset.
+        final pausedUntil = await _settings.quotaPausedUntil();
+        if (pausedUntil != null) {
+          if (pausedUntil.isAfter(_clock())) {
+            _blocked = true;
+            break;
+          }
+          await _settings.setQuotaPausedUntil(null);
+        }
         // Rules (network, Wi-Fi only, charging only) gate every new upload;
         // blocked items simply stay WAITING until conditions change.
         if (await _conditions?.check() != null) {
@@ -184,6 +200,27 @@ class UploadManager {
 
   Future<void> remove(String id) => _queue.delete(id);
 
+  /// Cancels every item that is not finished (the one in flight is aborted;
+  /// its saved session is kept, so nothing is lost if it is retried).
+  Future<int> cancelAll() async {
+    final items = await _queue.watchAll().first;
+    final open = items.where((i) => !i.status.isTerminal).toList();
+    for (final i in open) {
+      await cancel(i.id);
+    }
+    return open.length;
+  }
+
+  /// Removes completed, failed and cancelled items from the list.
+  Future<int> clearFinished() async {
+    final items = await _queue.watchAll().first;
+    final done = items.where((i) => i.clearable).toList();
+    for (final i in done) {
+      await _queue.delete(i.id);
+    }
+    return done.length;
+  }
+
   Future<void> _process(VideoUploadItem item) async {
     final token = CancelToken();
     _active[item.id] = token;
@@ -201,6 +238,9 @@ class UploadManager {
           });
     try {
       var videoId = item.youtubeVideoId;
+      // Visibility the video must have. Null = unknown (a session saved
+      // before the visibility was recorded): private or unlisted both pass.
+      String? expected = item.privacyStatus;
 
       // Fail fast: never spend a whole upload before discovering there is
       // nowhere to put the video.
@@ -226,14 +266,25 @@ class UploadManager {
           await _queue.update(item.id, clearSessionUri: true);
         }
 
+        // A resumed session keeps the visibility it was created with, so the
+        // setting only applies to uploads that start a fresh session.
+        final privacy = sessionUri != null && item.privacyStatus != null
+            ? item.privacyStatus!
+            : (await _settings.get()).visibility.apiValue;
+        expected = sessionUri != null && item.privacyStatus == null
+            ? null
+            : privacy;
+
         await _queue.update(item.id, status: UploadStatus.uploading);
         var lastWritten = -1;
         videoId = await _uploader.uploadVideo(
           file: File(path),
           title: item.title,
           description: item.description,
+          privacyStatus: privacy,
           sessionUri: sessionUri,
-          onSessionStarted: (uri) => _queue.update(item.id, sessionUri: uri),
+          onSessionStarted: (uri) =>
+              _queue.update(item.id, sessionUri: uri, privacyStatus: privacy),
           cancelToken: token,
           onProgress: (p) {
             final pct = (p * 100).floor();
@@ -246,12 +297,22 @@ class UploadManager {
         // Persist the id immediately: from here on, retries must not upload.
         await _queue.update(item.id,
             youtubeVideoId: videoId, progress: 1);
+      }
 
-        await _queue.update(item.id, status: UploadStatus.processing);
-        if (!await _uploader.isPrivate(videoId)) {
-          throw const _ItemFailure(
-              'Video is not private on YouTube; not adding to playlist.');
-        }
+      // Verified on every pass (1 quota unit), so a playlist retry or a
+      // resume after a quota pause never skips the visibility guarantee.
+      await _queue.update(item.id, status: UploadStatus.processing);
+      final actual = await _uploader.privacyStatusOf(videoId);
+      if (actual == null) {
+        throw const _ItemFailure(
+            'Could not verify the video\'s visibility; not adding to playlist.');
+      }
+      final ok = expected == null
+          ? actual == 'private' || actual == 'unlisted'
+          : actual == expected;
+      if (!ok) {
+        throw _ItemFailure(
+            'Video is $actual on YouTube (expected ${expected ?? 'private or unlisted'}); not adding to playlist.');
       }
 
       await _queue.update(item.id,
@@ -272,6 +333,8 @@ class UploadManager {
       }
     } on ReauthRequiredException catch (e) {
       await _fail(item, e.message);
+    } on QuotaExceededException {
+      await _pauseForQuota(item);
     } on YoutubeApiException catch (e) {
       await _fail(item, e.message);
     } on _ItemFailure catch (e) {
@@ -296,6 +359,23 @@ class UploadManager {
             ? UploadStatus.addingToPlaylist
             : UploadStatus.waiting,
         errorMessage: why.message);
+  }
+
+  /// The daily quota is gone: park the item (no retry counted, session and
+  /// YouTube id kept) and hold the whole queue until after the reset.
+  Future<void> _pauseForQuota(VideoUploadItem item) async {
+    final until = QuotaTracker.nextReset(_clock()).add(quotaResumeMargin);
+    await _settings.setQuotaPausedUntil(until);
+    final current = await _queue.get(item.id);
+    if (current?.status == UploadStatus.cancelled) return;
+    _deferred.add(item.id);
+    String two(int n) => n.toString().padLeft(2, '0');
+    await _queue.update(item.id,
+        status: current?.youtubeVideoId != null
+            ? UploadStatus.addingToPlaylist
+            : UploadStatus.waiting,
+        errorMessage: 'Paused: YouTube daily quota reached. '
+            'Resumes automatically after ${two(until.hour)}:${two(until.minute)}.');
   }
 
   /// Recoverable failure: back to WAITING (keeping the session and any

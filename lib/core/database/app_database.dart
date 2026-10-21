@@ -3,6 +3,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:sqlite3/common.dart' show CommonDatabase;
 
 import '../../features/settings/data/local/app_settings_table.dart';
+import '../quota/quota_usage_table.dart';
 import '../../features/upload/data/local/upload_queue_table.dart';
 import '../../features/youtube/data/local/youtube_account_table.dart';
 
@@ -10,14 +11,14 @@ part 'app_database.g.dart';
 
 /// App-wide Drift database. Opened via `drift_flutter` with
 /// one connection per engine so background workers can use it too.
-@DriftDatabase(tables: [YoutubeAccounts, AppSettingsRows, UploadQueue])
+@DriftDatabase(tables: [YoutubeAccounts, AppSettingsRows, UploadQueue, QuotaUsage])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -36,6 +37,16 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 7) {
             await m.addColumn(appSettingsRows, appSettingsRows.allow5g);
+          }
+          if (from < 8) {
+            await m.addColumn(appSettingsRows, appSettingsRows.visibility);
+          }
+          if (from < 9) {
+            await m.addColumn(uploadQueue, uploadQueue.privacyStatus);
+          }
+          if (from < 10) await m.createTable(quotaUsage);
+          if (from < 11) {
+            await m.addColumn(appSettingsRows, appSettingsRows.quotaPausedUntilMs);
           }
         },
       );

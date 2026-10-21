@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/network_service.dart';
 import '../../../../core/widgets/app_logo.dart';
+import '../../../../core/widgets/quota_card.dart';
 import '../../../media/presentation/providers/media_providers.dart';
 import '../../../upload/domain/entities/video_upload_item.dart';
 import '../../../media/presentation/widgets/scan_button.dart';
@@ -43,10 +44,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final n = await ref
           .read(originalCleanupServiceProvider)
           .deleteUploadedOriginals(items);
-      messenger.showSnackBar(SnackBar(
-          content: Text(n > 0
-              ? 'Deleted $n original video(s).'
-              : 'Nothing was deleted.')));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            n > 0 ? 'Deleted $n original video(s).' : 'Nothing was deleted.',
+          ),
+        ),
+      );
     } on UnsupportedError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('${e.message}')));
     }
@@ -64,11 +68,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.check_circle, color: Colors.green),
-        title: Text(fresh.length == 1
-            ? 'Upload complete'
-            : '${fresh.length} uploads complete'),
+        title: Text(
+          fresh.length == 1
+              ? 'Upload complete'
+              : '${fresh.length} uploads complete',
+        ),
         content: Text(
-          '$names$more\n\nSafely uploaded to YouTube as private. '
+          '$names$more\n\nSafely uploaded to YouTube. '
           'Delete the original from your phone?',
         ),
         actions: [
@@ -97,11 +103,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.watch(mediaChangeWatcherProvider);
       ref.watch(resumeOnConditionsProvider);
       ref.watch(backgroundScheduleSyncProvider);
+      ref.watch(resumeAfterQuotaResetProvider);
     }
     final settings = ref.watch(appSettingsProvider).value;
     final blocked = ref.watch(uploadBlockReasonProvider);
     final deletable = ref.watch(deletableOriginalsProvider);
     final network = ref.watch(networkKindProvider).value;
+    final quotaPausedUntil = ref.watch(quotaPausedUntilProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -125,7 +133,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             }),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const YoutubeConnectScreen()),
+              MaterialPageRoute<void>(
+                builder: (_) => const YoutubeConnectScreen(),
+              ),
             ),
           ),
           ListTile(
@@ -139,28 +149,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   IconButton(
                     tooltip: 'Open playlist on YouTube',
                     icon: const Icon(Icons.open_in_new),
-                    onPressed: () =>
-                        openPlaylistOnYoutube(context, settings!.selectedPlaylistId!),
+                    onPressed: () => openPlaylistOnYoutube(
+                      context,
+                      settings!.selectedPlaylistId!,
+                    ),
                   ),
                 const Icon(Icons.arrow_drop_down),
               ],
             ),
             enabled: auth is AuthConnected,
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const PlaylistPickerScreen()),
+              MaterialPageRoute<void>(
+                builder: (_) => const PlaylistPickerScreen(),
+              ),
             ),
           ),
+          if (auth is AuthConnected) const QuotaCard(),
           ListTile(
             leading: const Icon(Icons.autorenew),
             title: const Text('Auto Upload'),
-            subtitle: Text([
-              (settings?.autoUpload ?? false) ? 'ON' : 'OFF',
-              (settings?.uploadNetwork ?? UploadNetwork.wifiOnly).label,
-              if (settings?.chargingOnly ?? false) 'While charging',
-            ].join(' · ')),
+            subtitle: Text(
+              [
+                (settings?.autoUpload ?? false) ? 'ON' : 'OFF',
+                (settings?.uploadNetwork ?? UploadNetwork.wifiOnly).label,
+                if (settings?.chargingOnly ?? false) 'While charging',
+              ].join(' · '),
+            ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => const AutoUploadSettingsScreen())),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AutoUploadSettingsScreen(),
+              ),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.network_check),
@@ -173,6 +193,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               null => 'Checking…',
             }),
           ),
+          if (quotaPausedUntil != null)
+            ListTile(
+              leading: const Icon(Icons.pause_circle_outline),
+              title: const Text('Uploads paused: YouTube daily quota reached'),
+              subtitle: Text(
+                'Queued videos resume automatically after '
+                '${TimeOfDay.fromDateTime(quotaPausedUntil).format(context)}.',
+              ),
+              tileColor: Theme.of(context).colorScheme.errorContainer,
+            ),
           if (blocked != null)
             ListTile(
               leading: const Icon(Icons.hourglass_empty),
@@ -193,10 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           if (auth is AuthConnected) const ScanButton(),
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text('Queue', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
+          const QueueHeader(),
           const UploadQueueList(),
         ],
       ),
@@ -206,8 +233,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final messenger = ScaffoldMessenger.of(context);
                 final dupes = await pickAndEnqueueVideos(ref);
                 if (dupes > 0) {
-                  messenger.showSnackBar(SnackBar(
-                      content: Text('$dupes video(s) already in the queue.')));
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('$dupes video(s) already in the queue.'),
+                    ),
+                  );
                 }
               },
               icon: const Icon(Icons.upload),

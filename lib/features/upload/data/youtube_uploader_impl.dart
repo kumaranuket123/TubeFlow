@@ -19,6 +19,7 @@ class YoutubeUploaderImpl implements YoutubeUploader {
     required File file,
     required String title,
     required String description,
+    required String privacyStatus,
     String? sessionUri,
     required Future<void> Function(String sessionUri) onSessionStarted,
     required void Function(double) onProgress,
@@ -29,6 +30,7 @@ class YoutubeUploaderImpl implements YoutubeUploader {
         file: file,
         title: title,
         description: description,
+        privacyStatus: privacyStatus,
         sessionUri: sessionUri,
         onSessionStarted: onSessionStarted,
         onProgress: onProgress,
@@ -36,8 +38,8 @@ class YoutubeUploaderImpl implements YoutubeUploader {
       );
 
   @override
-  Future<bool> isPrivate(String videoId) async =>
-      _upload.isPrivate(await _auth.getValidAccessToken(), videoId);
+  Future<String?> privacyStatusOf(String videoId) async =>
+      _upload.privacyStatusOf(await _auth.getValidAccessToken(), videoId);
 
   @override
   Future<void> addToPlaylist(String playlistId, String videoId) async =>

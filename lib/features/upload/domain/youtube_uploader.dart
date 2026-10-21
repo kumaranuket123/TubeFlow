@@ -13,13 +13,16 @@ abstract class YoutubeUploader {
     required File file,
     required String title,
     required String description,
+    required String privacyStatus,
     String? sessionUri,
     required Future<void> Function(String sessionUri) onSessionStarted,
     required void Function(double) onProgress,
     required CancelToken cancelToken,
   });
 
-  Future<bool> isPrivate(String videoId);
+  /// The video's current `privacyStatus`, or null if YouTube does not (yet)
+  /// return it.
+  Future<String?> privacyStatusOf(String videoId);
 
   Future<void> addToPlaylist(String playlistId, String videoId);
 }

@@ -17,13 +17,14 @@ class _NoopUploader implements YoutubeUploader {
     required File file,
     required String title,
     required String description,
+    required String privacyStatus,
     String? sessionUri,
     required Future<void> Function(String sessionUri) onSessionStarted,
     required void Function(double) onProgress,
     required CancelToken cancelToken,
   }) async => 'id';
   @override
-  Future<bool> isPrivate(String videoId) async => true;
+  Future<String?> privacyStatusOf(String videoId) async => 'private';
   @override
   Future<void> addToPlaylist(String playlistId, String videoId) async {}
 }

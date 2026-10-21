@@ -59,10 +59,12 @@ class AutoUploadSettingsScreen extends ConsumerWidget {
             onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => const PlaylistPickerScreen())),
           ),
-          const ListTile(
-            title: Text('Visibility'),
-            subtitle: Text('Private (always)'),
-            enabled: false,
+          ListTile(
+            title: const Text('Video visibility'),
+            subtitle:
+                Text('${s.visibility.label}. ${s.visibility.description}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _chooseVisibility(context, ref, s.visibility),
           ),
         ],
       ),
@@ -113,4 +115,33 @@ Future<void> _chooseNetwork(
     }
   }
   await ref.read(settingsRepositoryProvider).setUploadNetwork(choice);
+}
+
+Future<void> _chooseVisibility(
+    BuildContext context, WidgetRef ref, UploadVisibility current) async {
+  final choice = await showDialog<UploadVisibility>(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      title: const Text('Video visibility'),
+      children: [
+        RadioGroup<UploadVisibility>(
+          groupValue: current,
+          onChanged: (v) => Navigator.of(ctx).pop(v),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final o in UploadVisibility.values)
+                RadioListTile<UploadVisibility>(
+                  value: o,
+                  title: Text(o.label),
+                  subtitle: Text(o.description),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+  if (choice == null || choice == current) return;
+  await ref.read(settingsRepositoryProvider).setVisibility(choice);
 }
