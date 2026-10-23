@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,6 +37,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// the banner on this screen stays available).
   final _prompted = <Object>{};
   bool _dialogOpen = false;
+  StreamSubscription<void>? _shareSub;
+
+  @override
+  void initState() {
+    super.initState();
+    final service = ref.read(sharedVideoServiceProvider);
+    _shareSub = service.arrivals.listen((_) => _handleShared());
+    // Cold start from the share sheet.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleShared());
+  }
+
+  @override
+  void dispose() {
+    _shareSub?.cancel();
+    super.dispose();
+  }
+
+  /// Videos shared from Gallery/Files: explain what happens, then enqueue.
+  Future<void> _handleShared() async {
+    final videos = await ref.read(sharedVideoServiceProvider).take();
+    if (videos.isEmpty || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (ref.read(youtubeAuthControllerProvider) is! AuthConnected) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Connect your YouTube account first, then share again.'),
+        ),
+      );
+      return;
+    }
+    final names = videos.take(3).map((v) => '• ${v.name}').join('\n');
+    final more = videos.length > 3 ? '\n…and ${videos.length - 3} more' : '';
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.cloud_upload_outlined),
+        title: Text(
+          videos.length == 1
+              ? 'Upload this video?'
+              : 'Upload ${videos.length} videos?',
+        ),
+        content: Text(
+          '$names$more\n\n'
+          '• Uploads to your YouTube channel and is added to your playlist.\n'
+          '• Follows your Wi-Fi / charging rules, and keeps going in the '
+          'background.\n'
+          '• Track progress in the queue on the home screen.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Upload'),
+          ),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    final dupes = await enqueueSharedVideos(ref, videos);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          dupes > 0
+              ? '$dupes video(s) already in the queue.'
+              : 'Added to the upload queue.',
+        ),
+      ),
+    );
+  }
 
   /// Asks Android to delete [items] (system confirmation dialog) and reports
   /// the outcome.

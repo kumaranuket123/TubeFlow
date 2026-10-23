@@ -1,3 +1,4 @@
+import '../../data/shared_video_service.dart';
 import 'dart:async';
 
 import 'package:drift/drift.dart' show TableUpdate;
@@ -183,3 +184,7 @@ final resumeAfterQuotaResetProvider = Provider<void>((ref) {
   }, fireImmediately: true);
   ref.onDispose(() => timer?.cancel());
 });
+
+final sharedVideoServiceProvider = Provider<SharedVideoService>(
+  (ref) => SharedVideoService(),
+);

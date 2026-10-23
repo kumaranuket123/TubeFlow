@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../media/domain/media_video.dart';
+import '../../data/shared_video_service.dart';
 import '../../../media/presentation/providers/media_providers.dart';
 import '../../domain/entities/video_upload_item.dart';
 import '../providers/upload_providers.dart';
@@ -48,4 +49,24 @@ Future<List<MediaVideo>> _mediaLibrary(WidgetRef ref) async {
   } catch (_) {
     return const [];
   }
+}
+
+/// Enqueues videos shared from another app. Returns how many were skipped as
+/// duplicates.
+Future<int> enqueueSharedVideos(WidgetRef ref, List<SharedVideo> videos) async {
+  final manager = ref.read(uploadManagerProvider);
+  var duplicates = 0;
+  for (final v in videos) {
+    final item = await manager.enqueue(NewVideo(
+      mediaStoreId: v.mediaStoreId,
+      contentUri: v.uri,
+      localPath: v.path,
+      fileName: v.name,
+      fileSize: v.size,
+      dateTaken: File(v.path).lastModifiedSync(),
+    ));
+    if (item == null) duplicates++;
+  }
+  await ref.read(uploadTriggerProvider)();
+  return duplicates;
 }

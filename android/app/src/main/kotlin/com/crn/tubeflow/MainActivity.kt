@@ -29,6 +29,94 @@ class MainActivity : FlutterActivity() {
         super.onActivityResult(requestCode, resultCode, data)
     }
 
+    // Videos shared to the app (ACTION_SEND / SEND_MULTIPLE), waiting for Dart.
+    private var sharedUris: List<Uri> = emptyList()
+    private var shareChannel: MethodChannel? = null
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        captureShare(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (captureShare(intent)) shareChannel?.invokeMethod("sharedVideos", null)
+    }
+
+    private fun captureShare(intent: Intent?): Boolean {
+        val uris: List<Uri> = when (intent?.action) {
+            Intent.ACTION_SEND -> listOfNotNull(streamExtra<Uri>(intent))
+            Intent.ACTION_SEND_MULTIPLE -> streamListExtra(intent)
+            else -> return false
+        }
+        if (uris.isEmpty()) return false
+        sharedUris = uris
+        intent!!.action = null // don't re-handle on rotation / relaunch
+        return true
+    }
+
+    @Suppress("DEPRECATION")
+    private fun <T : android.os.Parcelable> streamExtra(i: Intent): T? =
+        i.getParcelableExtra(Intent.EXTRA_STREAM)
+
+    @Suppress("DEPRECATION")
+    private fun streamListExtra(i: Intent): List<Uri> =
+        i.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM) ?: emptyList()
+
+    /** Resolves shared URIs to readable files: MediaStore path if readable, else a cache copy. */
+    private fun resolveShared(uris: List<Uri>): List<Map<String, Any?>> {
+        val dir = java.io.File(cacheDir, "shared").apply { mkdirs() }
+        return uris.mapNotNull { uri ->
+            try {
+                var name: String? = null
+                var size = 0L
+                var path: String? = null
+                var mediaId: String? = null
+                contentResolver.query(
+                    uri,
+                    arrayOf(
+                        android.provider.OpenableColumns.DISPLAY_NAME,
+                        android.provider.OpenableColumns.SIZE,
+                    ),
+                    null, null, null,
+                )?.use { c ->
+                    if (c.moveToFirst()) {
+                        name = c.getString(0)
+                        size = if (c.isNull(1)) 0L else c.getLong(1)
+                    }
+                }
+                if (uri.authority == MediaStore.AUTHORITY) {
+                    mediaId = uri.lastPathSegment?.takeIf { it.all(Char::isDigit) }
+                    contentResolver.query(
+                        uri, arrayOf(MediaStore.Video.Media.DATA), null, null, null,
+                    )?.use { c ->
+                        if (c.moveToFirst()) path = c.getString(0)
+                    }
+                }
+                val direct = path?.let { java.io.File(it) }
+                if (direct == null || !direct.canRead()) {
+                    val fileName = name ?: "shared_${System.nanoTime()}.mp4"
+                    val out = java.io.File(dir, "${System.nanoTime()}_$fileName")
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        out.outputStream().use { input.copyTo(it) }
+                    } ?: return@mapNotNull null
+                    path = out.absolutePath
+                    size = out.length()
+                    name = fileName
+                }
+                mapOf(
+                    "uri" to uri.toString(),
+                    "name" to (name ?: java.io.File(path!!).name),
+                    "size" to (if (size > 0) size else java.io.File(path!!).length()),
+                    "path" to path,
+                    "mediaId" to mediaId,
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
     override fun onDestroy() {
         observer?.let { contentResolver.unregisterContentObserver(it) }
         observer = null
@@ -50,6 +138,22 @@ class MainActivity : FlutterActivity() {
             contentResolver.registerContentObserver(
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI, true, observer!!
             )
+        }
+
+        shareChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "tubeflow/share")
+        shareChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "takeSharedVideos" -> {
+                    val uris = sharedUris
+                    sharedUris = emptyList()
+                    if (uris.isEmpty()) result.success(emptyList<Any>())
+                    else Thread {
+                        val out = resolveShared(uris)
+                        runOnUiThread { result.success(out) }
+                    }.start()
+                }
+                else -> result.notImplemented()
+            }
         }
 
         channel.setMethodCallHandler { call, result ->
